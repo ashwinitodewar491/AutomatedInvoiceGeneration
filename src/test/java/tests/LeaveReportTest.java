@@ -19,30 +19,31 @@ public class LeaveReportTest {
 
             Page page = browser.newPage();
 
-            // LOGIN
+            // LOGIN flow
             LoginPage2 login = new LoginPage2(page);
             login.login("pooja@joshsoftware.com", "josh123");
 
-            // OPEN LEAVE APPLICATIONS
+            // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
             leavePage.applyFilters("645", "2024-01-01", "2024-02-29");
             leavePage.openLeaveHistory();
 
-            // 🔹 GET SUMMARY
-            Map<String, int[]> report =
+            // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
+            Map<String, double[]> report =
                     leavePage.calculateLeaveDaysPerEmployee();
 
-            System.out.println("\nEMPLOYEE LEAVE SUMMARY");
-            System.out.println("-------------------------------------------");
+            System.out.println("\nEMPLOYEE LEAVE SUMMARY for leave history only");
+            System.out.println("--------------------------------------------------");
 
             report.forEach((employee, data) -> {
                 System.out.printf(
-                        "%-20s | Transactions: %2d | Total Days: %2d%n",
+                        "%-20s | Transactions: %2d | Total Days: %5.2f%n",
                         employee,
-                        data[0],
-                        data[1]
-        );
+                        (int) data[0],   // leave transaction count
+                        data[1]          // total leave days available in leave transaction
+                );
             });
-    }}}
-
+        }
+    }
+}
