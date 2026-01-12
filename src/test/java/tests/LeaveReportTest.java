@@ -4,7 +4,9 @@ import com.microsoft.playwright.*;
 import org.testng.annotations.Test;
 import pages.LeaveApplicationsPage;
 import pages.LoginPage2;
+import pages.PendingLeaveRow;
 
+import java.util.List;
 import java.util.Map;
 
 public class LeaveReportTest {
@@ -19,30 +21,58 @@ public class LeaveReportTest {
 
             Page page = browser.newPage();
 
-            // LOGIN
+            // LOGIN flow
             LoginPage2 login = new LoginPage2(page);
             login.login("pooja@joshsoftware.com", "josh123");
 
-            // OPEN LEAVE APPLICATIONS
+            // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            leavePage.applyFilters("645", "2024-01-01", "2024-02-29");
+            leavePage.applyFilters("645", "2024-01-01", "2024-12-31");
+
             leavePage.openLeaveHistory();
 
-            // 🔹 GET SUMMARY
-            Map<String, int[]> report =
+            // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
+            Map<String, double[]> report =
                     leavePage.calculateLeaveDaysPerEmployee();
 
-            System.out.println("\nEMPLOYEE LEAVE SUMMARY");
-            System.out.println("-------------------------------------------");
+            System.out.println("\nEMPLOYEE LEAVE SUMMARY for leave history only");
+            System.out.println("--------------------------------------------------");
 
             report.forEach((employee, data) -> {
                 System.out.printf(
-                        "%-20s | Transactions: %2d | Total Days: %2d%n",
+                        "%-20s | Transactions: %2d | Total Days: %5.2f%n",
                         employee,
-                        data[0],
-                        data[1]
-        );
+                        (int) data[0],   // leave transaction count
+                        data[1]          // total leave days available in leave transaction
+                );
             });
-    }}}
+            leavePage.openPendingLeaves();
+            // FETCH PENDING DATA
+            List<PendingLeaveRow> pendingLeaves =
+                    leavePage.fetchPendingLeaves();
 
+            System.out.println(
+                    "---------------------------------------------------------------------");
+            System.out.printf(
+                    "%-20s %-12s %-12s %-6s %-12s %-30s%n",
+                    "Employee", "Start Date", "End Date", "Days", "Type", "Reason"
+            );
+            System.out.println(
+                    "----------------------------------------------------------------------");
+            for (PendingLeaveRow row : pendingLeaves) {
+                System.out.printf(
+                        "%-20s %-12s %-12s %-6.1f %-12s %-30s%n",
+                        row.employee,
+                        row.startDate,
+                        row.endDate,
+                        row.days,
+                        row.type,
+                        row.reason
+                );
+            }
+            System.out.println(
+                    "-----------------------------------------------------------------------");
+        }
+    }
+}

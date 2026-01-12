@@ -2,7 +2,9 @@ package pages;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.LoadState;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,69 +53,147 @@ public class LeaveApplicationsPage {
         page.waitForSelector("table tbody tr");
     }
 
-    /**
-     * @return Map with keys: "PENDING", "HISTORY"
-     */
-    public Map<String, int[]> calculateLeaveDaysPerEmployee() {
+    private boolean waitForTableRedraw(String previousFirstRowText) {
+        try {
+            page.waitForFunction(
+                    "(prevText) => {" +
+                            "const rows = document.querySelectorAll('table tbody tr');" +
+                            "if (!rows || rows.length === 0) return false;" +
+                            "return rows[0].innerText.trim() !== prevText.trim();" +
+                            "}",
+                    previousFirstRowText,
+                    new Page.WaitForFunctionOptions().setTimeout(5000)
+            );
+            return true; // table changed
+        } catch (PlaywrightException e) {
+            System.out.println("No table change detected");
+            return false;
+        }
+    }
 
-        Map<String, int[]> result = new HashMap<>();
-        // int[0] = transaction count
-        // int[1] = total leave days
+    public Map<String, double[]> calculateLeaveDaysPerEmployee() {
 
-        while (true) {
+        List<LeaveRow> tempRows = new ArrayList<>();
+        int pageNo = 1;
+        boolean hasNextPage = true;
 
-            // ✅ Wait for table rows
+        while (hasNextPage) {
+
             page.waitForSelector("table tbody tr");
 
-            // ✅ Freeze rows for current page
+            System.out.println("\n================ PAGE " + pageNo + " ================");
+
+            // Fetching this just to check if user code is jumping to next page , for testing purpose only ,might remove later
+            String firstRowSnapshot =
+                    page.locator("table tbody tr").first().innerText();
+
             List<Locator> rows = page.locator("table tbody tr").all();
 
-            for (Locator row : rows) {
+            System.out.println("Rows found: " + rows.size());
 
-                List<Locator> cells = row.locator("td").all();
+            for (int i = 0; i < rows.size(); i++) {
+
+                String rowText = rows.get(i).innerText();
+                System.out.println("Row " + (i + 1) + " -> " + rowText); // Will remove this after overall coding, this is for printing and checking purpose only
+
+                List<Locator> cells = rows.get(i).locator("td").all();
                 if (cells.size() < 9) continue;
 
-                String employee  = cells.get(1).textContent().trim();
-                String leaveType = cells.get(8).textContent().trim();
-                String daysText  = cells.get(4).textContent().trim();
+                String employee  = cells.get(1).innerText().trim();
+                String leaveType = cells.get(8).innerText().trim();
+                String daysText  = cells.get(4).innerText().trim();
+                String leaveStatus = cells.get(7).innerText().trim();
 
                 if (leaveType.equalsIgnoreCase("WFH")) continue;
+                if (leaveStatus.equalsIgnoreCase("Rejected")) continue;  //This two like ignore WFH and rejected leaves
 
-                double days;
                 try {
-                    days = Double.parseDouble(daysText);
-                } catch (Exception e) {
-                    continue;
-                }
-
-                result.putIfAbsent(employee, new int[]{0, 0});
-                result.get(employee)[0]++;
-                result.get(employee)[1] += days;
+                    double days = Double.parseDouble(daysText);
+                    tempRows.add(new LeaveRow(employee, days));
+                } catch (Exception ignored) {}
             }
 
-            // 🔑 STEP 1: check if Next button EXISTS
-            Locator nextLi = page.locator(
-                    "#DataTables_Table_0_wrapper li.paginate_button.next"
+            // First scroll then click on next button as button is not visible to me util scroll
+            Locator nextButton = page.getByRole(
+                    AriaRole.LINK,
+                    new Page.GetByRoleOptions().setName("Next")
             );
-
-            if (nextLi.count() == 0) {
-                // No pagination at all
+            if (nextButton.count() == 0) {
+                hasNextPage = false;
                 break;
             }
+            // Scroll into view first
+            nextButton.scrollIntoViewIfNeeded();
 
-            // 🔑 STEP 2: check if it is disabled
-            String nextClass = nextLi.first().getAttribute("class");
-            if (nextClass != null && nextClass.contains("disabled")) {
-                break;
+            // Small wait for UI stabilization as it might take sometimes load for loading data
+            page.waitForTimeout(500);
+
+            // Click only if enabled
+            if (nextButton.isEnabled()) {
+                nextButton.click();
+                System.out.println("Clicked Next page");
+            } else {
+                System.out.println("Next button is disabled");
             }
 
-            // 🔑 STEP 3: click Next
-            nextLi.locator("button").click();
-
-            // ✅ wait for DataTables redraw
-            page.waitForTimeout(800);
+            // WAIT until table content changes
+            boolean changed = waitForTableRedraw(firstRowSnapshot);
+            if (!changed) {
+                System.out.println("No new page detected, stopping pagination");
+                break;
+            }
         }
+        // Consolidate overall data
+        Map<String, double[]> result = new HashMap<>();
 
+        for (LeaveRow row : tempRows) {
+            result.putIfAbsent(row.employee, new double[]{0, 0});
+            result.get(row.employee)[0]++;      // transactions
+            result.get(row.employee)[1] += row.days;
+        }
         return result;
+    }
+
+    public List<PendingLeaveRow> fetchPendingLeaves() {
+
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        List<PendingLeaveRow> result = new ArrayList<>();
+        Locator rowsLocator = page.locator("#pending_leave table tbody tr");
+        int rowCount = rowsLocator.count();
+
+        System.out.println("-----------------------------------------------------------");
+        System.out.println("Pending Leaves with details: " + rowCount);
+
+        for (int i = 0; i < rowCount; i++) {
+            Locator row = rowsLocator.nth(i);
+            List<Locator> cells = row.locator("td").all();
+
+            // must have Leave Approver column
+            if (cells.size() < 7) continue;
+
+            String approver = cells.get(6).innerText().trim(); //Added for safe side
+            if (approver.isEmpty() || approver.equals("-")) {
+                continue;
+            }
+            // fetch fields
+            String employee  = cells.get(1).innerText().trim();
+            String startDate = cells.get(2).innerText().trim();
+            String endDate   = cells.get(3).innerText().trim();
+            String daysText  = cells.get(4).innerText().trim();
+            String type      = cells.get(5).innerText().trim();
+            String reason    = cells.get(6).innerText().trim();
+
+            try {
+                double days = Double.parseDouble(daysText);
+                result.add(new PendingLeaveRow(
+                        employee, startDate, endDate, days, type, reason
+                ));
+            } catch (Exception ignored) {}
+        }
+        return result;
+    }
+    public void openPendingLeaves() {
+        page.locator("#pending_link").click();
+        page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 }
