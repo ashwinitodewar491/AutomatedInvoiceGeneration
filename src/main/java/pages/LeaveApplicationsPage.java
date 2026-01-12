@@ -2,6 +2,7 @@ package pages;
 
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.LoadState;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,8 +50,6 @@ public class LeaveApplicationsPage {
                 AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("Leave History")
         ).click();
-
-        // initial table load
         page.waitForSelector("table tbody tr");
     }
 
@@ -71,7 +70,6 @@ public class LeaveApplicationsPage {
             return false;
         }
     }
-
 
     public Map<String, double[]> calculateLeaveDaysPerEmployee() {
 
@@ -104,8 +102,10 @@ public class LeaveApplicationsPage {
                 String employee  = cells.get(1).innerText().trim();
                 String leaveType = cells.get(8).innerText().trim();
                 String daysText  = cells.get(4).innerText().trim();
+                String leaveStatus = cells.get(7).innerText().trim();
 
                 if (leaveType.equalsIgnoreCase("WFH")) continue;
+                if (leaveStatus.equalsIgnoreCase("Rejected")) continue;  //This two like ignore WFH and rejected leaves
 
                 try {
                     double days = Double.parseDouble(daysText);
@@ -142,9 +142,7 @@ public class LeaveApplicationsPage {
                 System.out.println("No new page detected, stopping pagination");
                 break;
             }
-
         }
-
         // Consolidate overall data
         Map<String, double[]> result = new HashMap<>();
 
@@ -153,8 +151,49 @@ public class LeaveApplicationsPage {
             result.get(row.employee)[0]++;      // transactions
             result.get(row.employee)[1] += row.days;
         }
-
         return result;
     }
 
+    public List<PendingLeaveRow> fetchPendingLeaves() {
+
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        List<PendingLeaveRow> result = new ArrayList<>();
+        Locator rowsLocator = page.locator("#pending_leave table tbody tr");
+        int rowCount = rowsLocator.count();
+
+        System.out.println("-----------------------------------------------------------");
+        System.out.println("Pending Leaves with details: " + rowCount);
+
+        for (int i = 0; i < rowCount; i++) {
+            Locator row = rowsLocator.nth(i);
+            List<Locator> cells = row.locator("td").all();
+
+            // must have Leave Approver column
+            if (cells.size() < 7) continue;
+
+            String approver = cells.get(6).innerText().trim(); //Added for safe side
+            if (approver.isEmpty() || approver.equals("-")) {
+                continue;
+            }
+            // fetch fields
+            String employee  = cells.get(1).innerText().trim();
+            String startDate = cells.get(2).innerText().trim();
+            String endDate   = cells.get(3).innerText().trim();
+            String daysText  = cells.get(4).innerText().trim();
+            String type      = cells.get(5).innerText().trim();
+            String reason    = cells.get(6).innerText().trim();
+
+            try {
+                double days = Double.parseDouble(daysText);
+                result.add(new PendingLeaveRow(
+                        employee, startDate, endDate, days, type, reason
+                ));
+            } catch (Exception ignored) {}
+        }
+        return result;
+    }
+    public void openPendingLeaves() {
+        page.locator("#pending_link").click();
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+    }
 }

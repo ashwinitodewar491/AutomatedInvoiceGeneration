@@ -4,7 +4,9 @@ import com.microsoft.playwright.*;
 import org.testng.annotations.Test;
 import pages.LeaveApplicationsPage;
 import pages.LoginPage2;
+import pages.PendingLeaveRow;
 
+import java.util.List;
 import java.util.Map;
 
 public class LeaveReportTest {
@@ -26,7 +28,8 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            leavePage.applyFilters("645", "2024-01-01", "2024-02-29");
+            leavePage.applyFilters("645", "2024-01-01", "2024-12-31");
+
             leavePage.openLeaveHistory();
 
             // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
@@ -44,6 +47,32 @@ public class LeaveReportTest {
                         data[1]          // total leave days available in leave transaction
                 );
             });
+            leavePage.openPendingLeaves();
+            // FETCH PENDING DATA
+            List<PendingLeaveRow> pendingLeaves =
+                    leavePage.fetchPendingLeaves();
+
+            System.out.println(
+                    "---------------------------------------------------------------------");
+            System.out.printf(
+                    "%-20s %-12s %-12s %-6s %-12s %-30s%n",
+                    "Employee", "Start Date", "End Date", "Days", "Type", "Reason"
+            );
+            System.out.println(
+                    "----------------------------------------------------------------------");
+            for (PendingLeaveRow row : pendingLeaves) {
+                System.out.printf(
+                        "%-20s %-12s %-12s %-6.1f %-12s %-30s%n",
+                        row.employee,
+                        row.startDate,
+                        row.endDate,
+                        row.days,
+                        row.type,
+                        row.reason
+                );
+            }
+            System.out.println(
+                    "-----------------------------------------------------------------------");
         }
     }
 }
