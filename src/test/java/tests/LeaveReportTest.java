@@ -8,9 +8,26 @@ import pages.PendingLeaveRow;
 
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 
 public class LeaveReportTest {
+    private String[] getCurrentMonthRange() {
 
+        LocalDate now = LocalDate.now();
+
+        LocalDate fromDate = now.withDayOfMonth(1);
+        LocalDate toDate   = now.with(TemporalAdjusters.lastDayOfMonth());
+
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        return new String[]{
+                fromDate.format(formatter),
+                toDate.format(formatter)
+        };
+    }
     @Test
     public void generateLeaveReport() {
 
@@ -28,8 +45,9 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            leavePage.applyFilters("645", "2024-01-01", "2024-12-31");
-
+           // leavePage.applyFilters("645", "2024-01-01", "2024-12-31");
+            String[] dateRange = getCurrentMonthRange();
+            leavePage.applyFilters("645", dateRange[0], dateRange[1]);
             leavePage.openLeaveHistory();
 
             // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
