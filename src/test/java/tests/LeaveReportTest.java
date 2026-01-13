@@ -5,6 +5,7 @@ import org.testng.annotations.Test;
 import pages.LeaveApplicationsPage;
 import pages.LoginPage2;
 import pages.PendingLeaveRow;
+import utils.EnvConfig;
 
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +38,7 @@ public class LeaveReportTest {
 
             // LOGIN flow
             LoginPage2 login = new LoginPage2(page);
-            login.login("pooja@joshsoftware.com", "josh123");
+            login.login(EnvConfig.get("LOGIN_EMAIL"), EnvConfig.get("LOGIN_PASSWORD"));
 
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
