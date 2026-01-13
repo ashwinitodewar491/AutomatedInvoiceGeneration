@@ -10,6 +10,8 @@ import utils.EnvConfig;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import utils.LeaveReportExcelWriter;
+
 
 public class LeaveReportTest {
 
@@ -43,7 +45,7 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            leavePage.applyFilters("445", "2024-01-13", "2024-02-13");
+            leavePage.applyFilters("445", "2024-01-13", "2024-07-13");
 
             leavePage.openLeaveHistory();
 
@@ -102,6 +104,7 @@ public class LeaveReportTest {
                         data[1]
                 );
             });
+            LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
         }
     }
 }
