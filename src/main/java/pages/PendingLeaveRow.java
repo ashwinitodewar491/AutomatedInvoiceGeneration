@@ -1,6 +1,10 @@
 package pages;
 
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class PendingLeaveRow {
     public final String employee;
     public final String startDate;

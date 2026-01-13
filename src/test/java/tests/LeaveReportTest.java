@@ -6,11 +6,25 @@ import pages.LeaveApplicationsPage;
 import pages.LoginPage2;
 import pages.PendingLeaveRow;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class LeaveReportTest {
 
+    private Map<String, double[]> summarizePendingLeaves(
+            List<PendingLeaveRow> pendingLeaves) {
+
+        Map<String, double[]> summary = new HashMap<>();
+
+        for (PendingLeaveRow row : pendingLeaves) {
+            summary.putIfAbsent(row.employee, new double[]{0, 0});
+            summary.get(row.employee)[0]++;        // transactions
+            summary.get(row.employee)[1] += row.days; // total days
+        }
+
+        return summary;
+    }
     @Test
     public void generateLeaveReport() {
 
@@ -28,7 +42,7 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            leavePage.applyFilters("645", "2024-01-01", "2024-12-31");
+            leavePage.applyFilters("445", "2024-01-13", "2024-02-13");
 
             leavePage.openLeaveHistory();
 
@@ -73,6 +87,20 @@ public class LeaveReportTest {
             }
             System.out.println(
                     "-----------------------------------------------------------------------");
+            Map<String, double[]> pendingSummary =
+                    summarizePendingLeaves(pendingLeaves);
+
+            System.out.println("\nEMPLOYEE LEAVE SUMMARY for PENDING leaves only");
+            System.out.println("--------------------------------------------------");
+
+            pendingSummary.forEach((employee, data) -> {
+                System.out.printf(
+                        "%-20s | Transactions: %2d | Total Days: %5.2f%n",
+                        employee,
+                        (int) data[0],
+                        data[1]
+                );
+            });
         }
     }
 }
