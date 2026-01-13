@@ -3,6 +3,7 @@ package pages;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
+import utils.EnvConfig;
 
 public class LoginPage2 {
 
@@ -14,7 +15,7 @@ public class LoginPage2 {
 
     public void login(String email, String password) {
 
-        page.navigate("https://pg-stage-intranet.joshsoftware.com/");
+        page.navigate(EnvConfig.get("BASE_URL"));
 
         // ✅ WAIT FOR LOGIN FORM
         page.waitForSelector("input[type='email'], input[name='email']");

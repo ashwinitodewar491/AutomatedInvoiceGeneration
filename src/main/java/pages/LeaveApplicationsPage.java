@@ -157,43 +157,78 @@ public class LeaveApplicationsPage {
     public List<PendingLeaveRow> fetchPendingLeaves() {
 
         page.waitForLoadState(LoadState.NETWORKIDLE);
+
         List<PendingLeaveRow> result = new ArrayList<>();
-        Locator rowsLocator = page.locator("#pending_leave table tbody tr");
-        int rowCount = rowsLocator.count();
+        boolean hasNextPage = true;
+        int pageNo = 1;
 
-        System.out.println("-----------------------------------------------------------");
-        System.out.println("Pending Leaves with details: " + rowCount);
+        while (hasNextPage) {
 
-        for (int i = 0; i < rowCount; i++) {
-            Locator row = rowsLocator.nth(i);
-            List<Locator> cells = row.locator("td").all();
+            Locator rowsLocator = page.locator("#pending_leave table tbody tr");
+            int rowCount = rowsLocator.count();
 
-            // must have Leave Approver column
-            if (cells.size() < 7) continue;
+            System.out.println("-----------------------------------------------------------");
+            System.out.println("Pending Leaves - Page " + pageNo + " | Rows: " + rowCount);
 
-            String approver = cells.get(6).innerText().trim(); //Added for safe side
-            if (approver.isEmpty() || approver.equals("-")) {
-                continue;
+            for (int i = 0; i < rowCount; i++) {
+
+                Locator row = rowsLocator.nth(i);
+                List<Locator> cells = row.locator("td").all();
+
+                // must have Leave Approver column
+                if (cells.size() < 7) continue;
+
+                String approver = cells.get(6).innerText().trim();
+                if (approver.isEmpty() || approver.equals("-")) continue;
+
+                String employee  = cells.get(1).innerText().trim();
+                String startDate = cells.get(2).innerText().trim();
+                String endDate   = cells.get(3).innerText().trim();
+                String daysText  = cells.get(4).innerText().trim();
+                String type      = cells.get(5).innerText().trim();
+                String reason    = cells.get(6).innerText().trim();
+
+                try {
+                    double days = Double.parseDouble(daysText);
+                    result.add(new PendingLeaveRow(
+                            employee, startDate, endDate, days, type, reason
+                    ));
+                } catch (Exception ignored) {}
             }
-            // fetch fields
-            String employee  = cells.get(1).innerText().trim();
-            String startDate = cells.get(2).innerText().trim();
-            String endDate   = cells.get(3).innerText().trim();
-            String daysText  = cells.get(4).innerText().trim();
-            String type      = cells.get(5).innerText().trim();
-            String reason    = cells.get(6).innerText().trim();
 
-            try {
-                double days = Double.parseDouble(daysText);
-                result.add(new PendingLeaveRow(
-                        employee, startDate, endDate, days, type, reason
-                ));
-            } catch (Exception ignored) {}
+            // ---------------- NEXT BUTTON LOGIC ----------------
+            Locator nextButton = page.getByRole(
+                    AriaRole.LINK,
+                    new Page.GetByRoleOptions().setName("Next")
+            );
+
+            if (nextButton.count() == 0 || !nextButton.isEnabled()) {
+                hasNextPage = false;
+                System.out.println("No more pending pages.");
+                break;
+            }
+
+            // Scroll first (important)
+            nextButton.scrollIntoViewIfNeeded();
+
+            // Small stabilization wait
+            page.waitForTimeout(500);
+
+            nextButton.click();
+            System.out.println("Clicked Next page");
+
+            // Wait for new page data to load
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+
+            pageNo++;
         }
+
         return result;
     }
+
     public void openPendingLeaves() {
         page.locator("#pending_link").click();
         page.waitForLoadState(LoadState.NETWORKIDLE);
     }
+
 }
