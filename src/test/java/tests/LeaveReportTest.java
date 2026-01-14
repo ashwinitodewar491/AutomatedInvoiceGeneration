@@ -13,6 +13,7 @@ import java.util.Map;
 
 public class LeaveReportTest {
 
+
     private Map<String, double[]> summarizePendingLeaves(
             List<PendingLeaveRow> pendingLeaves) {
 
