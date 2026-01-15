@@ -185,8 +185,8 @@ public class LeaveApplicationsPage {
                 String startDate = cells.get(2).innerText().trim();
                 String endDate   = cells.get(3).innerText().trim();
                 String daysText  = cells.get(4).innerText().trim();
-                String type      = cells.get(5).innerText().trim();
-                String reason    = cells.get(6).innerText().trim();
+                String type      = cells.get(8).innerText().trim();
+                String reason    = cells.get(5).innerText().trim();
 
                 try {
                     double days = Double.parseDouble(daysText);
