@@ -4,16 +4,20 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import pages.PendingLeaveRow;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
 import java.util.Map;
 
 public class LeaveReportExcelWriter {
 
-    public static void generateExcel(
+    public static File generateExcel(
             Map<String, double[]> leaveHistorySummary,
             List<PendingLeaveRow> pendingLeaves
     ) {
+
+        File excelFile = new File("Leave_Report.xlsx");
+
         try (Workbook workbook = new XSSFWorkbook()) {
 
             // ================= SHEET 1 : Leave History =================
@@ -40,9 +44,8 @@ public class LeaveReportExcelWriter {
             pHeader.createCell(1).setCellValue("Start Date");
             pHeader.createCell(2).setCellValue("Last Date");
             pHeader.createCell(3).setCellValue("Days");
-            pHeader.createCell(4).setCellValue("reason");
+            pHeader.createCell(4).setCellValue("Reason");
             pHeader.createCell(5).setCellValue("Type");
-
 
             rowNum = 1;
             for (PendingLeaveRow row : pendingLeaves) {
@@ -53,15 +56,14 @@ public class LeaveReportExcelWriter {
                 r.createCell(3).setCellValue(row.days);
                 r.createCell(4).setCellValue(row.reason);
                 r.createCell(5).setCellValue(row.type);
-
             }
 
-            try (FileOutputStream fos =
-                         new FileOutputStream("Leave_Report.xlsx")) {
+            try (FileOutputStream fos = new FileOutputStream(excelFile)) {
                 workbook.write(fos);
             }
 
-            System.out.println("✅ Excel report generated: Leave_Report.xlsx");
+            System.out.println("✅ Excel report generated: " + excelFile.getAbsolutePath());
+            return excelFile;
 
         } catch (Exception e) {
             throw new RuntimeException("Excel generation failed", e);
