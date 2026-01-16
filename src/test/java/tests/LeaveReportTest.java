@@ -56,7 +56,7 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            leavePage.applyFilters(projectId, "2024-01-13", "2024-02-13");
+            leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13");
 
             leavePage.openLeaveHistory();
 
