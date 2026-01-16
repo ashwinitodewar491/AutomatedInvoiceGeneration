@@ -17,6 +17,7 @@ import utils.LeaveReportExcelWriter;
 
 public class LeaveReportTest {
 
+
     private Map<String, double[]> summarizePendingLeaves(
             List<PendingLeaveRow> pendingLeaves) {
 
@@ -32,11 +33,19 @@ public class LeaveReportTest {
     }
     @Test
     public void generateLeaveReport() {
+        String projectId = System.getProperty("PROJECT_ID","445");
+
+        if (projectId == null || projectId.isBlank()) {
+            throw new IllegalStateException(
+                    "❌ projectId is required. Pass it using -DPROJECT_ID=XXX"
+            );
+        }
+
 
         try (Playwright playwright = Playwright.create()) {
 
             Browser browser = playwright.chromium()
-                    .launch(new BrowserType.LaunchOptions().setHeadless(false));
+                    .launch(new BrowserType.LaunchOptions().setHeadless(true));
 
             Page page = browser.newPage();
 
@@ -47,7 +56,7 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            leavePage.applyFilters("445", "2024-01-13", "2024-07-13");
+            leavePage.applyFilters(projectId, "2024-01-13", "2024-02-13");
 
             leavePage.openLeaveHistory();
 
