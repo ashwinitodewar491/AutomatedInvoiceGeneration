@@ -5,8 +5,10 @@ import org.testng.annotations.Test;
 import pages.LeaveApplicationsPage;
 import pages.LoginPage2;
 import pages.PendingLeaveRow;
+import utils.EmailUtil;
 import utils.EnvConfig;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +106,9 @@ public class LeaveReportTest {
                         data[1]
                 );
             });
-            LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
+            //LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
+            File excel = LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
+            EmailUtil.sendEmailWithAttachment( excel, "ashwini.todewar@joshsoftware.com" );
         }
     }
 }
