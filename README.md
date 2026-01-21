@@ -7,6 +7,8 @@ curl --location --request POST 'http://<JenkinsHost>/job/InvoiceAutomation/build
 --data-urlencode 'PROJECT_ID=445' \
 --data-urlencode 'RUN_TYPE=STANDARD' \
 --data-urlencode 'BASE_URL=https://pg-stage-intranet.joshsoftware.com' \
+--data-urlencode 'LOGIN_EMAIL=pooja@joshsoftware.com' \
+--data-urlencode 'LOGIN_PASSWORD=josh123'
 
 Basic Authentication have been used 
 Pass jenkins user name and API token from jenkins in authentication
