@@ -13,6 +13,7 @@ public class LeaveReportExcelWriter {
 
     public static File generateExcel(
             Map<String, double[]> leaveHistorySummary,
+            Map<String, double[]> pendingSummary,
             List<PendingLeaveRow> pendingLeaves
     ) {
 
@@ -21,7 +22,7 @@ public class LeaveReportExcelWriter {
         try (Workbook workbook = new XSSFWorkbook()) {
 
             // ================= SHEET 1 : Leave History =================
-            Sheet historySheet = workbook.createSheet("Leave History Summary");
+            Sheet historySheet = workbook.createSheet("Approved Leave History");
 
             Row header = historySheet.createRow(0);
             header.createCell(0).setCellValue("Employee");
@@ -37,25 +38,26 @@ public class LeaveReportExcelWriter {
             }
 
             // ================= SHEET 2 : Pending Leaves =================
-            Sheet pendingSheet = workbook.createSheet("Pending Leaves");
+            Sheet pendingSheet = workbook.createSheet("Pending Leaves History");
 
-            Row pHeader = pendingSheet.createRow(0);
-            pHeader.createCell(0).setCellValue("Employee");
-            pHeader.createCell(1).setCellValue("Start Date");
-            pHeader.createCell(2).setCellValue("Last Date");
-            pHeader.createCell(3).setCellValue("Days");
-            pHeader.createCell(4).setCellValue("Reason");
-            pHeader.createCell(5).setCellValue("Type");
+            rowNum = 0;
 
-            rowNum = 1;
-            for (PendingLeaveRow row : pendingLeaves) {
+            // -------- TITLE --------
+            Row title = pendingSheet.createRow(rowNum++);
+            title.createCell(0).setCellValue("EMPLOYEE PENDING LEAVE SUMMARY (Contains WFH also) ");
+
+            // -------- SUMMARY HEADER --------
+            Row summaryHeader = pendingSheet.createRow(rowNum++);
+            summaryHeader.createCell(0).setCellValue("Employee");
+            summaryHeader.createCell(1).setCellValue("Transactions");
+            summaryHeader.createCell(2).setCellValue("Total Days");
+
+            // -------- SUMMARY DATA
+            for (Map.Entry<String, double[]> entry : pendingSummary.entrySet()) {
                 Row r = pendingSheet.createRow(rowNum++);
-                r.createCell(0).setCellValue(row.employee);
-                r.createCell(1).setCellValue(row.startDate);
-                r.createCell(2).setCellValue(row.endDate);
-                r.createCell(3).setCellValue(row.days);
-                r.createCell(4).setCellValue(row.reason);
-                r.createCell(5).setCellValue(row.type);
+                r.createCell(0).setCellValue(entry.getKey());
+                r.createCell(1).setCellValue((int) entry.getValue()[0]);
+                r.createCell(2).setCellValue(entry.getValue()[1]);
             }
 
             try (FileOutputStream fos = new FileOutputStream(excelFile)) {

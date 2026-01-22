@@ -80,24 +80,24 @@ public class LeaveReportTest {
             List<PendingLeaveRow> pendingLeaves =
                     leavePage.fetchPendingLeaves();
 
-            System.out.println(
-                    "---------------------------------------------------------------------");
-            System.out.printf(
-                    "%-20s %-12s %-12s %-6s %-12s %-30s%n",
-                    "Employee", "Start Date", "End Date", "Days", "Type", "Reason"
-            );
+//            System.out.println(
+//                    "---------------------------------------------------------------------");
+//            System.out.printf(
+//                    "%-20s %-12s %-12s %-6s %-12s %-30s%n",
+//                    "Employee", "Start Date", "End Date", "Days", "Type", "Reason"
+//            );
             System.out.println(
                     "----------------------------------------------------------------------");
             for (PendingLeaveRow row : pendingLeaves) {
-                System.out.printf(
-                        "%-20s %-12s %-12s %-6.1f %-12s %-30s%n",
-                        row.employee,
-                        row.startDate,
-                        row.endDate,
-                        row.days,
-                        row.type,
-                        row.reason
-                );
+//                System.out.printf(
+//                        "%-20s %-12s %-12s %-6.1f %-12s %-30s%n",
+//                        row.employee,
+//                        row.startDate,
+//                        row.endDate,
+//                        row.days,
+//                        row.type,
+//                        row.reason
+//                );
             }
             System.out.println(
                     "-----------------------------------------------------------------------");
@@ -116,8 +116,14 @@ public class LeaveReportTest {
                 );
             });
             //LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
-            File excel = LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
-            EmailUtil.sendEmailWithAttachment( excel, "ashwini.todewar@joshsoftware.com" );
+            //File excel = LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
+            //File excel = LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
+            File excel = LeaveReportExcelWriter.generateExcel(
+                    report,
+                    pendingSummary,
+                    pendingLeaves
+            );
+            //EmailUtil.sendEmailWithAttachment( excel, "ashwini.todewar@joshsoftware.com" );
         }
     }
 }

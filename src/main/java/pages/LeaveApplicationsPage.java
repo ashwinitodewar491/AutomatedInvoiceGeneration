@@ -81,7 +81,7 @@ public class LeaveApplicationsPage {
 
             page.waitForSelector("table tbody tr");
 
-            System.out.println("\n================ PAGE " + pageNo + " ================");
+            //System.out.println("\n================ PAGE " + pageNo + " ================");
 
             // Fetching this just to check if user code is jumping to next page , for testing purpose only ,might remove later
             String firstRowSnapshot =
@@ -89,12 +89,12 @@ public class LeaveApplicationsPage {
 
             List<Locator> rows = page.locator("table tbody tr").all();
 
-            System.out.println("Rows found: " + rows.size());
+            //System.out.println("Rows found: " + rows.size()); // Will keep this commented for future debugging ,this print row by row data
 
             for (int i = 0; i < rows.size(); i++) {
 
                 String rowText = rows.get(i).innerText();
-                System.out.println("Row " + (i + 1) + " -> " + rowText); // Will remove this after overall coding, this is for printing and checking purpose only
+                //System.out.println("Row " + (i + 1) + " -> " + rowText); // Will keep this commented for future debugging ,this print row by row data
 
                 List<Locator> cells = rows.get(i).locator("td").all();
                 if (cells.size() < 9) continue;
@@ -167,8 +167,8 @@ public class LeaveApplicationsPage {
             Locator rowsLocator = page.locator("#pending_leave table tbody tr");
             int rowCount = rowsLocator.count();
 
-            System.out.println("-----------------------------------------------------------");
-            System.out.println("Pending Leaves - Page " + pageNo + " | Rows: " + rowCount);
+            //System.out.println("-----------------------------------------------------------");
+            //System.out.println("Pending Leaves - Page " + pageNo + " | Rows: " + rowCount);
 
             for (int i = 0; i < rowCount; i++) {
 
@@ -204,7 +204,7 @@ public class LeaveApplicationsPage {
 
             if (nextButton.count() == 0 || !nextButton.isEnabled()) {
                 hasNextPage = false;
-                System.out.println("No more pending pages.");
+                //System.out.println("No more pending pages.");
                 break;
             }
 
