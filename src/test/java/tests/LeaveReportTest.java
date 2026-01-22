@@ -5,13 +5,18 @@ import org.testng.annotations.Test;
 import pages.LeaveApplicationsPage;
 import pages.LoginPage2;
 import pages.PendingLeaveRow;
+import utils.EmailUtil;
 import utils.EnvConfig;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import utils.LeaveReportExcelWriter;
+
 
 public class LeaveReportTest {
+
 
     private Map<String, double[]> summarizePendingLeaves(
             List<PendingLeaveRow> pendingLeaves) {
@@ -28,11 +33,19 @@ public class LeaveReportTest {
     }
     @Test
     public void generateLeaveReport() {
+        String projectId = System.getProperty("PROJECT_ID","445");
+
+        if (projectId == null || projectId.isBlank()) {
+            throw new IllegalStateException(
+                    "❌ projectId is required. Pass it using -DPROJECT_ID=XXX"
+            );
+        }
+
 
         try (Playwright playwright = Playwright.create()) {
 
             Browser browser = playwright.chromium()
-                    .launch(new BrowserType.LaunchOptions().setHeadless(false));
+                    .launch(new BrowserType.LaunchOptions().setHeadless(true));
 
             Page page = browser.newPage();
 
@@ -43,7 +56,7 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            leavePage.applyFilters("445", "2024-01-13", "2024-02-13");
+            leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13");
 
             leavePage.openLeaveHistory();
 
@@ -67,24 +80,24 @@ public class LeaveReportTest {
             List<PendingLeaveRow> pendingLeaves =
                     leavePage.fetchPendingLeaves();
 
-            System.out.println(
-                    "---------------------------------------------------------------------");
-            System.out.printf(
-                    "%-20s %-12s %-12s %-6s %-12s %-30s%n",
-                    "Employee", "Start Date", "End Date", "Days", "Type", "Reason"
-            );
+//            System.out.println(
+//                    "---------------------------------------------------------------------");
+//            System.out.printf(
+//                    "%-20s %-12s %-12s %-6s %-12s %-30s%n",
+//                    "Employee", "Start Date", "End Date", "Days", "Type", "Reason"
+//            );
             System.out.println(
                     "----------------------------------------------------------------------");
             for (PendingLeaveRow row : pendingLeaves) {
-                System.out.printf(
-                        "%-20s %-12s %-12s %-6.1f %-12s %-30s%n",
-                        row.employee,
-                        row.startDate,
-                        row.endDate,
-                        row.days,
-                        row.type,
-                        row.reason
-                );
+//                System.out.printf(
+//                        "%-20s %-12s %-12s %-6.1f %-12s %-30s%n",
+//                        row.employee,
+//                        row.startDate,
+//                        row.endDate,
+//                        row.days,
+//                        row.type,
+//                        row.reason
+//                );
             }
             System.out.println(
                     "-----------------------------------------------------------------------");
@@ -102,6 +115,15 @@ public class LeaveReportTest {
                         data[1]
                 );
             });
+            //LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
+            //File excel = LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
+            //File excel = LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
+            File excel = LeaveReportExcelWriter.generateExcel(
+                    report,
+                    pendingSummary,
+                    pendingLeaves
+            );
+            //EmailUtil.sendEmailWithAttachment( excel, "ashwini.todewar@joshsoftware.com" );
         }
     }
 }
