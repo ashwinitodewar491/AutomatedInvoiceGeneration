@@ -75,8 +75,10 @@ public class LeaveReportTest {
             //leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13");
             String[] dateRange = getCurrentMonthRange();
             leavePage.applyFilters(projectId, dateRange[0], dateRange[1]);
-            System.out.println("date range getting passed is "+dateRange);
-            leavePage.openLeaveHistory();
+            System.out.println(
+                    "Date range getting passed: From = " + dateRange[0] +
+                            ", To = " + dateRange[1]
+            );            leavePage.openLeaveHistory();
 
             // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
             Map<String, double[]> report =
