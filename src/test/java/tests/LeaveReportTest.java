@@ -5,16 +5,22 @@ import org.testng.annotations.Test;
 import pages.LeaveApplicationsPage;
 import pages.LoginPage2;
 import pages.PendingLeaveRow;
+import utils.EmailUtil;
 import utils.EnvConfig;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import utils.LeaveReportExcelWriter;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 
+
 public class LeaveReportTest {
+
+
     private Map<String, double[]> summarizePendingLeaves(
             List<PendingLeaveRow> pendingLeaves) {
 
@@ -33,7 +39,7 @@ public class LeaveReportTest {
         LocalDate now = LocalDate.now();
 
         LocalDate fromDate = now.withDayOfMonth(1);
-        LocalDate toDate = now.with(TemporalAdjusters.lastDayOfMonth());
+        LocalDate toDate   = now.with(TemporalAdjusters.lastDayOfMonth());
 
         DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -43,83 +49,80 @@ public class LeaveReportTest {
                 toDate.format(formatter)
         };
     }
+    @Test
+    public void generateLeaveReport() {
+        String projectId = System.getProperty("PROJECT_ID","445");
 
-        @Test
-        public void generateLeaveReport() {
+        if (projectId == null || projectId.isBlank()) {
+            throw new IllegalStateException(
+                    "❌ projectId is required. Pass it using -DPROJECT_ID=XXX"
+            );
+        }
+        try (Playwright playwright = Playwright.create()) {
 
-            try (Playwright playwright = Playwright.create()) {
+            Browser browser = playwright.chromium()
+                    .launch(new BrowserType.LaunchOptions().setHeadless(true));
 
-                Browser browser = playwright.chromium()
-                        .launch(new BrowserType.LaunchOptions().setHeadless(false));
+            Page page = browser.newPage();
 
-                Page page = browser.newPage();
+            // LOGIN flow
+            LoginPage2 login = new LoginPage2(page);
+            login.login(EnvConfig.get("LOGIN_EMAIL"), EnvConfig.get("LOGIN_PASSWORD"));
 
-                // LOGIN flow
-                LoginPage2 login = new LoginPage2(page);
-                login.login(EnvConfig.get("LOGIN_EMAIL"), EnvConfig.get("LOGIN_PASSWORD"));
+            // OPEN LEAVE APPLICATIONS sub menu
+            LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
+            leavePage.open();
+            //leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13");
+            String[] dateRange = getCurrentMonthRange();
+            leavePage.applyFilters(projectId, dateRange[0], dateRange[1]);
+            System.out.println("date range getting passed is "+dateRange);
+            leavePage.openLeaveHistory();
 
-                // OPEN LEAVE APPLICATIONS sub menu
-                LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
-                leavePage.open();
-                String[] dateRange = getCurrentMonthRange();
-                leavePage.applyFilters("645", dateRange[0], dateRange[1]);
-                leavePage.openLeaveHistory();
+            // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
+            Map<String, double[]> report =
+                    leavePage.calculateLeaveDaysPerEmployee();
 
-                // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
-                Map<String, double[]> report =
-                        leavePage.calculateLeaveDaysPerEmployee();
+            System.out.println("\nEMPLOYEE LEAVE SUMMARY for leave history only");
+            System.out.println("--------------------------------------------------");
 
-                System.out.println("\nEMPLOYEE LEAVE SUMMARY for leave history only");
-                System.out.println("--------------------------------------------------");
-
-                report.forEach((employee, data) -> {
-                    System.out.printf(
-                            "%-20s | Transactions: %2d | Total Days: %5.2f%n",
-                            employee,
-                            (int) data[0],   // leave transaction count
-                            data[1]          // total leave days available in leave transaction
-                    );
-                });
-                leavePage.openPendingLeaves();
-                // FETCH PENDING DATA
-                List<PendingLeaveRow> pendingLeaves =
-                        leavePage.fetchPendingLeaves();
-
-                System.out.println(
-                        "---------------------------------------------------------------------");
+            report.forEach((employee, data) -> {
                 System.out.printf(
-                        "%-20s %-12s %-12s %-6s %-12s %-30s%n",
-                        "Employee", "Start Date", "End Date", "Days", "Type", "Reason"
+                        "%-20s | Transactions: %2d | Total Days: %5.2f%n",
+                        employee,
+                        (int) data[0],   // leave transaction count
+                        data[1]          // total leave days available in leave transaction
                 );
-                System.out.println(
-                        "----------------------------------------------------------------------");
-                for (PendingLeaveRow row : pendingLeaves) {
-                    System.out.printf(
-                            "%-20s %-12s %-12s %-6.1f %-12s %-30s%n",
-                            row.employee,
-                            row.startDate,
-                            row.endDate,
-                            row.days,
-                            row.type,
-                            row.reason
-                    );
-                }
-                System.out.println(
-                        "-----------------------------------------------------------------------");
-                Map<String, double[]> pendingSummary =
-                        summarizePendingLeaves(pendingLeaves);
-
-                System.out.println("\nEMPLOYEE LEAVE SUMMARY for PENDING leaves only");
-                System.out.println("--------------------------------------------------");
-
-                pendingSummary.forEach((employee, data) -> {
-                    System.out.printf(
-                            "%-20s | Transactions: %2d | Total Days: %5.2f%n",
-                            employee,
-                            (int) data[0],
-                            data[1]
-                    );
-                });
+            });
+            leavePage.openPendingLeaves();
+            // FETCH PENDING DATA
+            List<PendingLeaveRow> pendingLeaves =
+                    leavePage.fetchPendingLeaves();
+            System.out.println(
+                    "----------------------------------------------------------------------");
+            for (PendingLeaveRow row : pendingLeaves) {
             }
+            System.out.println(
+                    "-----------------------------------------------------------------------");
+            Map<String, double[]> pendingSummary =
+                    summarizePendingLeaves(pendingLeaves);
+
+            System.out.println("\nEMPLOYEE LEAVE SUMMARY for PENDING leaves only");
+            System.out.println("--------------------------------------------------");
+
+            pendingSummary.forEach((employee, data) -> {
+                System.out.printf(
+                        "%-20s | Transactions: %2d | Total Days: %5.2f%n",
+                        employee,
+                        (int) data[0],
+                        data[1]
+                );
+            });
+            File excel = LeaveReportExcelWriter.generateExcel(
+                    report,
+                    pendingSummary,
+                    pendingLeaves
+            );
+            EmailUtil.sendEmailWithAttachment( excel, "ashwini.todewar@joshsoftware.com" );
         }
     }
+}
