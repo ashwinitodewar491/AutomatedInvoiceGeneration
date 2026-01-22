@@ -64,7 +64,7 @@ public class LeaveReportExcelWriter {
                 workbook.write(fos);
             }
 
-            System.out.println("✅ Excel report generated: " + excelFile.getAbsolutePath());
+            System.out.println("Excel report generated: " + excelFile.getAbsolutePath());
             return excelFile;
 
         } catch (Exception e) {

@@ -61,7 +61,7 @@ public class LeaveReportTest {
         try (Playwright playwright = Playwright.create()) {
 
             Browser browser = playwright.chromium()
-                    .launch(new BrowserType.LaunchOptions().setHeadless(true));
+                    .launch(new BrowserType.LaunchOptions().setHeadless(false));
 
             Page page = browser.newPage();
 
@@ -72,13 +72,14 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            //leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13");
+            //leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
             String[] dateRange = getCurrentMonthRange();
             leavePage.applyFilters(projectId, dateRange[0], dateRange[1]);
             System.out.println(
                     "Date range getting passed: From = " + dateRange[0] +
                             ", To = " + dateRange[1]
-            );            leavePage.openLeaveHistory();
+            );
+            leavePage.openLeaveHistory();
 
             // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
             Map<String, double[]> report =
