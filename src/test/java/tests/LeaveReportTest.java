@@ -131,7 +131,6 @@ public class LeaveReportTest {
                     pendingSummary,
                     pendingLeaves
             );
-
             EmailUtil.sendEmailWithAttachment( excel,
                     "ashwini.todewar@joshsoftware.com",subject,
                     projectName,
