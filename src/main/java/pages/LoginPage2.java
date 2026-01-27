@@ -1,38 +1,31 @@
 package pages;
 
 import com.microsoft.playwright.*;
-import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
+import locators.LoginPageLocators;
 import utils.EnvConfig;
 
 public class LoginPage2 {
 
     private final Page page;
+    private final LoginPageLocators loc;
 
     public LoginPage2(Page page) {
         this.page = page;
+        this.loc = new LoginPageLocators(page);
     }
 
     public void login(String email, String password) {
 
         page.navigate(EnvConfig.get("BASE_URL"));
 
-        // ✅ WAIT FOR LOGIN FORM
-        page.waitForSelector("input[type='email'], input[name='email']");
+        // wait for login form
+        loc.emailInput.waitFor();
 
-        page.getByRole(AriaRole.TEXTBOX,
-                        new Page.GetByRoleOptions().setName("Email *"))
-                .fill(email);
+        loc.emailInput.fill(email);
+        loc.passwordInput.fill(password);
+        loc.signInButton.click();
 
-        page.getByRole(AriaRole.TEXTBOX,
-                        new Page.GetByRoleOptions().setName("Password *"))
-                .fill(password);
-
-        page.getByRole(AriaRole.BUTTON,
-                        new Page.GetByRoleOptions().setName("Sign in"))
-                .click();
-
-        // ✅ WAIT AFTER LOGIN
         page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 }
