@@ -78,7 +78,7 @@ public class LeaveReportTest {
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
 
-            //String[] dateRange = getCurrentMonthRange();
+            String[] dateRange = getCurrentMonthRange();
 
             // ================= LOOP OVER PROJECTS =================
             for (String projectId : projectIds) {
@@ -86,16 +86,16 @@ public class LeaveReportTest {
                 projectId = projectId.trim();
                 System.out.println("Processing projectId = " + projectId);
 
-//                String projectName = leavePage.applyFilters(
-//                        projectId,
-//                        dateRange[0],
-//                        dateRange[1]
-//                );
-                String projectName=leavePage.applyFilters(projectId, "2024-01-13", "2024-02-13"); //Will keep this for testing purpose
-//                System.out.println(
-//                        "Date range: From = " + dateRange[0] +
-//                                ", To = " + dateRange[1]
-//                );
+                String projectName = leavePage.applyFilters(
+                        projectId,
+                        dateRange[0],
+                        dateRange[1]
+                );
+                //String projectName=leavePage.applyFilters(projectId, "2024-01-13", "2024-02-13"); //Will keep this for testing purpose
+                System.out.println(
+                        "Date range: From = " + dateRange[0] +
+                                ", To = " + dateRange[1]
+                );
 
                 leavePage.openLeaveHistory();
 
