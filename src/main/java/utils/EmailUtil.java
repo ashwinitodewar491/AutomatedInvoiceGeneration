@@ -10,11 +10,14 @@ public class EmailUtil {
 
     public static void sendEmailWithAttachment(
             File attachment,
-            String toEmail
+            String toEmail,
+            String subject,
+            String projectName,   // kept for logging / future use
+            String mailContent
     ) {
 
-        final String username = System.getProperty("SMTP_USER");
-        final String password = System.getProperty("SMTP_PASS");
+        final String username = System.getProperty("SMTP_USER",EnvConfig.get("SMTP_USER"));
+        final String password = System.getProperty("SMTP_PASS",EnvConfig.get("SMTP_PASS"));
 
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
@@ -32,17 +35,20 @@ public class EmailUtil {
         try {
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(username));
+
             message.setRecipients(
                     Message.RecipientType.TO,
                     InternetAddress.parse(toEmail)
             );
-            message.setSubject("Monthly Leave Report");
 
-            // Email body
-            BodyPart textPart = new MimeBodyPart();
-            textPart.setText("Please find attached the leave report.");
+            // ✅ USE SUBJECT AS PASSED
+            message.setSubject(subject);
 
-            // Attachment
+            // ✅ MAIL BODY AS PASSED
+            MimeBodyPart textPart = new MimeBodyPart();
+            textPart.setText(mailContent);
+
+            // ✅ ATTACHMENT
             MimeBodyPart attachmentPart = new MimeBodyPart();
             attachmentPart.attachFile(attachment);
 
@@ -53,10 +59,12 @@ public class EmailUtil {
             message.setContent(multipart);
 
             Transport.send(message);
-            System.out.println("Email sent successfully!");
+            System.out.println(
+                    "✅ Email sent for project: " + projectName
+            );
 
         } catch (Exception e) {
-            throw new RuntimeException("Email sending failed", e);
+            throw new RuntimeException("❌ Email sending failed", e);
         }
     }
 }

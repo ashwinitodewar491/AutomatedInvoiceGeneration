@@ -26,9 +26,17 @@ public class LeaveApplicationsPage {
         page.waitForURL("**/leave_applications");
     }
 
-    public void applyFilters(String projectId, String from, String to) {
-        page.locator("#project_id").selectOption(projectId);
+    public String applyFilters(String projectId, String from, String to) {
+        //page.locator("#project_id").selectOption(projectId);
+        Locator projectDropdown = page.locator("#project_id");
 
+        // Get visible project name BEFORE selecting
+        String projectName = projectDropdown
+                .locator("option[value='" + projectId + "']")
+                .innerText()
+                .trim();
+
+        projectDropdown.selectOption(projectId);
         page.getByRole(
                 AriaRole.TEXTBOX,
                 new Page.GetByRoleOptions().setName("From Date")
@@ -43,6 +51,7 @@ public class LeaveApplicationsPage {
                 AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("Search")
         ).click();
+        return projectName;
     }
 
     public void openLeaveHistory() {

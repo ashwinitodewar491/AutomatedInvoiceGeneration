@@ -7,7 +7,6 @@ import pages.LoginPage2;
 import pages.PendingLeaveRow;
 import utils.EmailUtil;
 import utils.EnvConfig;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
@@ -72,13 +71,18 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            //leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
+            //String projectName=leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
             String[] dateRange = getCurrentMonthRange();
-            leavePage.applyFilters(projectId, dateRange[0], dateRange[1]);
+            String projectName=leavePage.applyFilters(projectId, dateRange[0], dateRange[1]);
             System.out.println(
                     "Date range getting passed: From = " + dateRange[0] +
                             ", To = " + dateRange[1]
             );
+            String subject = "Monthly Leave Report : "+ projectName;
+            String mailContent =
+                    "Hello Team,\n\n" +
+                            "Please find attached the leave report.\n\n" +
+                            "Project: " + projectName + "\n";
             leavePage.openLeaveHistory();
 
             // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
@@ -120,12 +124,19 @@ public class LeaveReportTest {
                         data[1]
                 );
             });
+
             File excel = LeaveReportExcelWriter.generateExcel(
+                    projectName,
                     report,
                     pendingSummary,
                     pendingLeaves
             );
-            EmailUtil.sendEmailWithAttachment( excel, "ashwini.todewar@joshsoftware.com" );
+
+            EmailUtil.sendEmailWithAttachment( excel,
+                    "ashwini.todewar@joshsoftware.com",subject,
+                    projectName,
+                    mailContent
+                     );
         }
     }
 }
