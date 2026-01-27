@@ -91,7 +91,7 @@ public class LeaveReportTest {
                         dateRange[0],
                         dateRange[1]
                 );
-                //String projectName=leavePage.applyFilters(projectId, "2024-01-13", "2024-02-13"); //Will keep this for testing purpose
+                //String projectName=leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
                 System.out.println(
                         "Date range: From = " + dateRange[0] +
                                 ", To = " + dateRange[1]
