@@ -2,7 +2,7 @@ package utils;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import pages.PendingLeaveRow;
+import models.PendingLeaveRow;
 
 import java.io.File;
 import java.io.FileOutputStream;
