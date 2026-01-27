@@ -209,10 +209,16 @@ public class LeaveApplicationsPage {
             }
 
             // ---------------- NEXT BUTTON LOGIC ----------------
-            Locator nextButton = page.getByRole(
-                    AriaRole.LINK,
-                    new Page.GetByRoleOptions().setName("Next")
-            );
+//            Locator nextButton = page.getByRole(
+//                    AriaRole.LINK,
+//                    new Page.GetByRoleOptions().setName("Next")
+//            );
+            Locator nextButton = page
+                    .locator("#pending_leave")
+                    .getByRole(
+                            AriaRole.LINK,
+                            new Locator.GetByRoleOptions().setName("Next")
+                    );
 
             if (nextButton.count() == 0 || !nextButton.isEnabled()) {
                 hasNextPage = false;
