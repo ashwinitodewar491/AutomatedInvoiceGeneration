@@ -26,9 +26,17 @@ public class LeaveApplicationsPage {
         page.waitForURL("**/leave_applications");
     }
 
-    public void applyFilters(String projectId, String from, String to) {
-        page.locator("#project_id").selectOption(projectId);
+    public String applyFilters(String projectId, String from, String to) {
+        //page.locator("#project_id").selectOption(projectId);
+        Locator projectDropdown = page.locator("#project_id");
 
+        // Get visible project name BEFORE selecting
+        String projectName = projectDropdown
+                .locator("option[value='" + projectId + "']")
+                .innerText()
+                .trim();
+
+        projectDropdown.selectOption(projectId);
         page.getByRole(
                 AriaRole.TEXTBOX,
                 new Page.GetByRoleOptions().setName("From Date")
@@ -43,6 +51,7 @@ public class LeaveApplicationsPage {
                 AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("Search")
         ).click();
+        return projectName;
     }
 
     public void openLeaveHistory() {
@@ -50,7 +59,16 @@ public class LeaveApplicationsPage {
                 AriaRole.BUTTON,
                 new Page.GetByRoleOptions().setName("Leave History")
         ).click();
-        page.waitForSelector("table tbody tr");
+        //page.waitForSelector("table tbody tr");
+        page.waitForFunction("""
+        () => {
+            const table = document.querySelector('table tbody');
+            if (!table) return false;
+
+            // Either rows exist OR empty message is shown
+            return table.querySelectorAll('tr').length >= 0;
+        }
+    """);
     }
 
     private boolean waitForTableRedraw(String previousFirstRowText) {
@@ -74,38 +92,41 @@ public class LeaveApplicationsPage {
     public Map<String, double[]> calculateLeaveDaysPerEmployee() {
 
         List<LeaveRow> tempRows = new ArrayList<>();
-        int pageNo = 1;
         boolean hasNextPage = true;
 
         while (hasNextPage) {
 
-            page.waitForSelector("table tbody tr");
+            // 1️⃣ Wait only for table body (not rows)
+            page.waitForFunction("""
+            () => document.querySelector('table tbody') !== null
+        """);
 
-            //System.out.println("\n================ PAGE " + pageNo + " ================");
+            Locator rowsLocator = page.locator("table tbody tr");
+            int rowCount = rowsLocator.count();
 
-            // Fetching this just to check if user code is jumping to next page , for testing purpose only ,might remove later
-            String firstRowSnapshot =
-                    page.locator("table tbody tr").first().innerText();
+            // 2️⃣ ZERO-ROW GUARD (EXIT EARLY)
+            if (rowCount == 0) {
+                System.out.println("⚠️ No leave history rows found. Skipping row processing.");
+                break;
+            }
 
-            List<Locator> rows = page.locator("table tbody tr").all();
+            // 3️⃣ SAFE snapshot (only when rows exist)
+            String firstRowSnapshot = rowsLocator.first().innerText();
 
-            //System.out.println("Rows found: " + rows.size()); // Will keep this commented for future debugging ,this print row by row data
+            // 4️⃣ Read rows ONLY when rowCount > 0
+            for (int i = 0; i < rowCount; i++) {
 
-            for (int i = 0; i < rows.size(); i++) {
-
-                String rowText = rows.get(i).innerText();
-                //System.out.println("Row " + (i + 1) + " -> " + rowText); // Will keep this commented for future debugging ,this print row by row data
-
-                List<Locator> cells = rows.get(i).locator("td").all();
+                Locator row = rowsLocator.nth(i);
+                List<Locator> cells = row.locator("td").all();
                 if (cells.size() < 9) continue;
 
-                String employee  = cells.get(1).innerText().trim();
-                String leaveType = cells.get(8).innerText().trim();
-                String daysText  = cells.get(4).innerText().trim();
-                String leaveStatus = cells.get(7).innerText().trim();
+                String employee     = cells.get(1).innerText().trim();
+                String leaveType    = cells.get(8).innerText().trim();
+                String daysText     = cells.get(4).innerText().trim();
+                String leaveStatus  = cells.get(7).innerText().trim();
 
                 if (leaveType.equalsIgnoreCase("WFH")) continue;
-                if (leaveStatus.equalsIgnoreCase("Rejected")) continue;  //This two like ignore WFH and rejected leaves
+                if (leaveStatus.equalsIgnoreCase("Rejected")) continue;
 
                 try {
                     double days = Double.parseDouble(daysText);
@@ -113,46 +134,36 @@ public class LeaveApplicationsPage {
                 } catch (Exception ignored) {}
             }
 
-            // First scroll then click on next button as button is not visible to me util scroll
+            // 5️⃣ Pagination logic
             Locator nextButton = page.getByRole(
                     AriaRole.LINK,
                     new Page.GetByRoleOptions().setName("Next")
             );
-            if (nextButton.count() == 0) {
+
+            if (nextButton.count() == 0 || !nextButton.isEnabled()) {
                 hasNextPage = false;
                 break;
             }
-            // Scroll into view first
+
             nextButton.scrollIntoViewIfNeeded();
-
-            // Small wait for UI stabilization as it might take sometimes load for loading data
             page.waitForTimeout(500);
+            nextButton.click();
 
-            // Click only if enabled
-            if (nextButton.isEnabled()) {
-                nextButton.click();
-                System.out.println("Clicked Next page");
-            } else {
-                System.out.println("Next button is disabled");
-            }
-
-            // WAIT until table content changes
             boolean changed = waitForTableRedraw(firstRowSnapshot);
-            if (!changed) {
-                System.out.println("No new page detected, stopping pagination");
-                break;
-            }
+            if (!changed) break;
         }
-        // Consolidate overall data
-        Map<String, double[]> result = new HashMap<>();
 
+        // 6️⃣ Consolidation
+        Map<String, double[]> result = new HashMap<>();
         for (LeaveRow row : tempRows) {
             result.putIfAbsent(row.employee, new double[]{0, 0});
-            result.get(row.employee)[0]++;      // transactions
+            result.get(row.employee)[0]++;
             result.get(row.employee)[1] += row.days;
         }
+
         return result;
     }
+
 
     public List<PendingLeaveRow> fetchPendingLeaves() {
 
@@ -165,6 +176,7 @@ public class LeaveApplicationsPage {
         while (hasNextPage) {
 
             Locator rowsLocator = page.locator("#pending_leave table tbody tr");
+
             int rowCount = rowsLocator.count();
 
             //System.out.println("-----------------------------------------------------------");

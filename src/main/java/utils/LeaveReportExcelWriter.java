@@ -12,17 +12,18 @@ import java.util.Map;
 public class LeaveReportExcelWriter {
 
     public static File generateExcel(
+            String projectName,
             Map<String, double[]> leaveHistorySummary,
             Map<String, double[]> pendingSummary,
             List<PendingLeaveRow> pendingLeaves
     ) {
 
-        File excelFile = new File("Leave_Report.xlsx");
+        File excelFile = new File("Leave_Summary_Report : "+projectName+".xlsx");
 
         try (Workbook workbook = new XSSFWorkbook()) {
 
             // ================= SHEET 1 : Leave History =================
-            Sheet historySheet = workbook.createSheet("Approved Leave History");
+            Sheet historySheet = workbook.createSheet("Approved Leave History for "+projectName);
 
             Row header = historySheet.createRow(0);
             header.createCell(0).setCellValue("Employee");
@@ -38,7 +39,7 @@ public class LeaveReportExcelWriter {
             }
 
             // ================= SHEET 2 : Pending Leaves =================
-            Sheet pendingSheet = workbook.createSheet("Pending Leaves History");
+            Sheet pendingSheet = workbook.createSheet("Pending Leaves History for "+projectName);
 
             rowNum = 0;
 
@@ -64,7 +65,7 @@ public class LeaveReportExcelWriter {
                 workbook.write(fos);
             }
 
-            System.out.println("✅ Excel report generated: " + excelFile.getAbsolutePath());
+            System.out.println("Excel report generated: " + excelFile.getAbsolutePath());
             return excelFile;
 
         } catch (Exception e) {

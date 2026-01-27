@@ -7,12 +7,14 @@ import pages.LoginPage2;
 import pages.PendingLeaveRow;
 import utils.EmailUtil;
 import utils.EnvConfig;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import utils.LeaveReportExcelWriter;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 
 
 public class LeaveReportTest {
@@ -31,6 +33,21 @@ public class LeaveReportTest {
 
         return summary;
     }
+    private String[] getCurrentMonthRange() {
+
+        LocalDate now = LocalDate.now();
+
+        LocalDate fromDate = now.withDayOfMonth(1);
+        LocalDate toDate   = now.with(TemporalAdjusters.lastDayOfMonth());
+
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        return new String[]{
+                fromDate.format(formatter),
+                toDate.format(formatter)
+        };
+    }
     @Test
     public void generateLeaveReport() {
         String projectId = System.getProperty("PROJECT_ID","445");
@@ -40,8 +57,6 @@ public class LeaveReportTest {
                     "❌ projectId is required. Pass it using -DPROJECT_ID=XXX"
             );
         }
-
-
         try (Playwright playwright = Playwright.create()) {
 
             Browser browser = playwright.chromium()
@@ -56,8 +71,18 @@ public class LeaveReportTest {
             // OPEN LEAVE APPLICATIONS sub menu
             LeaveApplicationsPage leavePage = new LeaveApplicationsPage(page);
             leavePage.open();
-            leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13");
-
+            //String projectName=leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
+            String[] dateRange = getCurrentMonthRange();
+            String projectName=leavePage.applyFilters(projectId, dateRange[0], dateRange[1]);
+            System.out.println(
+                    "Date range getting passed: From = " + dateRange[0] +
+                            ", To = " + dateRange[1]
+            );
+            String subject = "Monthly Leave Report : "+ projectName;
+            String mailContent =
+                    "Hello Team,\n\n" +
+                            "Please find attached the leave report.\n\n" +
+                            "Project: " + projectName + "\n";
             leavePage.openLeaveHistory();
 
             // 🔹 GET SUMMARY ( calculate leave transaction and actual leave days , ignore WFH)
@@ -79,25 +104,9 @@ public class LeaveReportTest {
             // FETCH PENDING DATA
             List<PendingLeaveRow> pendingLeaves =
                     leavePage.fetchPendingLeaves();
-
-//            System.out.println(
-//                    "---------------------------------------------------------------------");
-//            System.out.printf(
-//                    "%-20s %-12s %-12s %-6s %-12s %-30s%n",
-//                    "Employee", "Start Date", "End Date", "Days", "Type", "Reason"
-//            );
             System.out.println(
                     "----------------------------------------------------------------------");
             for (PendingLeaveRow row : pendingLeaves) {
-//                System.out.printf(
-//                        "%-20s %-12s %-12s %-6.1f %-12s %-30s%n",
-//                        row.employee,
-//                        row.startDate,
-//                        row.endDate,
-//                        row.days,
-//                        row.type,
-//                        row.reason
-//                );
             }
             System.out.println(
                     "-----------------------------------------------------------------------");
@@ -115,15 +124,18 @@ public class LeaveReportTest {
                         data[1]
                 );
             });
-            //LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
-            //File excel = LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
-            //File excel = LeaveReportExcelWriter.generateExcel(report, pendingLeaves);
+
             File excel = LeaveReportExcelWriter.generateExcel(
+                    projectName,
                     report,
                     pendingSummary,
                     pendingLeaves
             );
-            EmailUtil.sendEmailWithAttachment( excel, "ashwini.todewar@joshsoftware.com" );
+            EmailUtil.sendEmailWithAttachment( excel,
+                    "ashwini.todewar@joshsoftware.com",subject,
+                    projectName,
+                    mailContent
+                     );
         }
     }
 }
