@@ -1,4 +1,4 @@
-package pages;
+package models;
 
 public class LeaveRow {
     public String employee;
