@@ -22,10 +22,18 @@ public class LoginPage2 {
         // wait for login form
         loc.emailInput.waitFor();
 
-        loc.emailInput.fill(email);
-        loc.passwordInput.fill(password);
+        loc.emailInput.fill(email.trim());
+        loc.passwordInput.fill(password.trim());
         loc.signInButton.click();
 
         page.waitForLoadState(LoadState.NETWORKIDLE);
+        // ❌ INVALID CREDENTIALS HANDLING
+        if (page.getByText(LoginPageLocators.INVALID_CREDENTIALS_TEXT)
+                .isVisible()) {
+
+            throw new RuntimeException(
+                    "Login failed: Invalid email or password"
+            );
+        }
     }
 }

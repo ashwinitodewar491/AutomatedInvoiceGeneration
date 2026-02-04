@@ -22,7 +22,7 @@ public class LeaveReportTest {
     public void generateLeaveReport() {
 
         String[] projectIds =
-                System.getProperty("PROJECT_ID", "445,645").split(",");
+                System.getProperty("PROJECT_ID", "445").split(",");
 
         List<File> attachments = new ArrayList<>();
         StringBuilder projectNames = new StringBuilder();
@@ -46,19 +46,41 @@ public class LeaveReportTest {
 
             String[] range = DateUtil.getCurrentMonthRange();
 
-            for (String projectId : projectIds) {
+            boolean atLeastOneValidProject = false;
 
-//                String projectName = leavePage.applyFilters(
-//                        projectId.trim(), range[0], range[1]
-//                );
-                String projectName=leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
+            for (String rawProjectId : projectIds) {
 
+                String projectId = rawProjectId.trim();
+
+                // 1️⃣ Empty / comma-only case
+                if (projectId.isEmpty()) {
+                    System.out.println("Skipping empty projectId");
+                    continue;
+                }
+
+                // 2️⃣ Validate project exists
+                if (!leavePage.isProjectIdPresent(projectId)) {
+                    System.out.println(
+                            "Invalid projectId (not available): " + projectId
+                    );
+                    continue;
+                }
+
+                atLeastOneValidProject = true;
+
+                System.out.println("Processing projectId: " + projectId);
+
+                String projectName = leavePage.applyFilters(
+                        projectId, range[0], range[1]
+                );
 
                 leavePage.openLeaveHistory();
+
                 Map<String, double[]> historySummary =
                         service.getLeaveHistorySummary();
 
                 leavePage.openPendingLeaves();
+
                 List<PendingLeaveRow> pendingLeaves =
                         leavePage.fetchPendingLeaves();
 
@@ -75,10 +97,15 @@ public class LeaveReportTest {
                 attachments.add(excel);
                 projectNames.append("• ").append(projectName).append("\n");
             }
+            if (!atLeastOneValidProject) {
+                throw new IllegalStateException(
+                        "No valid projectId found. Please check PROJECT_ID parameter."
+                );
+            }
 
             EmailUtil.sendEmailWithMultipleAttachments(
                     attachments,
-                    "ashwini.todewar@joshsoftware.com",
+                    EnvConfig.get("LOGIN_EMAIL_RECIPIENT"),
                     "Monthly Leave Report",
                     "Hello Team,\n\nPlease find attached reports for:\n\n"
                             + projectNames +

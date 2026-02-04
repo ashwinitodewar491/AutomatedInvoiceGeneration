@@ -149,4 +149,17 @@ public class LeaveApplicationsPage {
         }
         return result;
     }
+    public boolean isProjectIdPresent(String projectId) {
+
+        Locator options = page.locator("#project_id option");
+
+        for (int i = 0; i < options.count(); i++) {
+            String value = options.nth(i).getAttribute("value");
+            if (projectId.equals(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

@@ -8,6 +8,8 @@ public class LoginPageLocators {
     public final Locator emailInput;
     public final Locator passwordInput;
     public final Locator signInButton;
+    public static final String INVALID_CREDENTIALS_TEXT =
+            "Invalid email or password.";
 
     public LoginPageLocators(Page page) {
 
