@@ -22,7 +22,7 @@ public class LeaveReportTest {
     public void generateLeaveReport() {
 
         String[] projectIds =
-                System.getProperty("PROJECT_ID", "445").split(",");
+                System.getProperty("PROJECT_ID", "445,284").split(",");
 
         List<File> attachments = new ArrayList<>();
         StringBuilder projectNames = new StringBuilder();
@@ -103,14 +103,14 @@ public class LeaveReportTest {
                 );
             }
 
-            EmailUtil.sendEmailWithMultipleAttachments(
-                    attachments,
-                    EnvConfig.get("LOGIN_EMAIL_RECIPIENT"),
-                    "Monthly Leave Report",
-                    "Hello Team,\n\nPlease find attached reports for:\n\n"
-                            + projectNames +
-                            "\nRegards,\nAutomation"
-            );
+//            EmailUtil.sendEmailWithMultipleAttachments(
+//                    attachments,
+//                    EnvConfig.get("LOGIN_EMAIL_RECIPIENT"),
+//                    "Monthly Leave Report",
+//                    "Hello Team,\n\nPlease find attached reports for:\n\n"
+//                            + projectNames +
+//                            "\nRegards,\nAutomation"
+//            );
         }
     }
 }
