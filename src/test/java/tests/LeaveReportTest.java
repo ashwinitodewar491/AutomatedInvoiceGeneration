@@ -70,9 +70,11 @@ public class LeaveReportTest {
 
                 System.out.println("Processing projectId: " + projectId);
 
-                String projectName = leavePage.applyFilters(
-                        projectId, range[0], range[1]
-                );
+//                String projectName = leavePage.applyFilters(
+//                        projectId, range[0], range[1]
+//                );
+                String projectName=leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
+
 
                 leavePage.openLeaveHistory();
 
@@ -103,14 +105,14 @@ public class LeaveReportTest {
                 );
             }
 
-//            EmailUtil.sendEmailWithMultipleAttachments(
-//                    attachments,
-//                    EnvConfig.get("LOGIN_EMAIL_RECIPIENT"),
-//                    "Monthly Leave Report",
-//                    "Hello Team,\n\nPlease find attached reports for:\n\n"
-//                            + projectNames +
-//                            "\nRegards,\nAutomation"
-//            );
+            EmailUtil.sendEmailWithMultipleAttachments(
+                    attachments,
+                    EnvConfig.get("LOGIN_EMAIL_RECIPIENT"),
+                    "Monthly Leave Report",
+                    "Hello Team,\n\nPlease find attached reports for:\n\n"
+                            + projectNames +
+                            "\nRegards,\nAutomation"
+            );
         }
     }
 }
