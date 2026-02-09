@@ -21,8 +21,13 @@ public class LeaveReportTest {
     @Test
     public void generateLeaveReport() {
 
-        String[] projectIds =
-                System.getProperty("PROJECT_ID", "445,284").split(",");
+//        String[] projectIds =
+//                System.getProperty("PROJECT_ID", "445,284").split(",");
+        String[] projectNamesInput =
+                System.getProperty(
+                        "PROJECT_NAMES",
+                        "Banyan-ops"
+                ).split(",");
 
         List<File> attachments = new ArrayList<>();
         StringBuilder projectNames = new StringBuilder();
@@ -30,7 +35,7 @@ public class LeaveReportTest {
         try (Playwright playwright = Playwright.create()) {
 
             Browser browser = playwright.chromium()
-                    .launch(new BrowserType.LaunchOptions().setHeadless(true));
+                    .launch(new BrowserType.LaunchOptions().setHeadless(false));
 
             Page page = browser.newPage();
 
@@ -48,35 +53,38 @@ public class LeaveReportTest {
 
             boolean atLeastOneValidProject = false;
 
-            for (String rawProjectId : projectIds) {
+            for (String rawProjectName : projectNamesInput) {
 
-                String projectId = rawProjectId.trim();
+                String projectName = rawProjectName.trim();
 
-                // 1️⃣ Empty / comma-only case
-                if (projectId.isEmpty()) {
-                    System.out.println("Skipping empty projectId");
+                // 1️⃣ Empty / comma-only safety
+                if (projectName.isEmpty()) {
+                    System.out.println("Skipping empty project name");
                     continue;
                 }
 
-                // 2️⃣ Validate project exists
-                if (!leavePage.isProjectIdPresent(projectId)) {
+                // 2️⃣ Validate project exists in dropdown
+                if (!leavePage.isProjectNamePresent(projectName)) {
                     System.out.println(
-                            "Invalid projectId (not available): " + projectId
+                            "Invalid project (not available): " + projectName
                     );
                     continue;
                 }
 
                 atLeastOneValidProject = true;
 
-                System.out.println("Processing projectId: " + projectId);
+                System.out.println("Processing project: " + projectName);
 
-//                String projectName = leavePage.applyFilters(
-//                        projectId, range[0], range[1]
+                // 3️⃣ Select by NAME (internally selects ID)
+//                leavePage.applyFiltersByProjectName(
+//                        projectName,
+//                        range[0],
+//                        range[1]
 //                );
-                String projectName=leavePage.applyFilters(projectId, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
-
+                String projectName2=leavePage.applyFiltersByProjectName(projectName, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
 
                 leavePage.openLeaveHistory();
+
 
                 Map<String, double[]> historySummary =
                         service.getLeaveHistorySummary();
@@ -90,14 +98,14 @@ public class LeaveReportTest {
                         service.getPendingSummary(pendingLeaves);
 
                 File excel = LeaveReportExcelWriter.generateExcel(
-                        projectName,
+                        projectName2,
                         historySummary,
                         pendingSummary,
                         pendingLeaves
                 );
 
                 attachments.add(excel);
-                projectNames.append("• ").append(projectName).append("\n");
+                projectNames.append("• ").append(projectName2).append("\n");
             }
             if (!atLeastOneValidProject) {
                 throw new IllegalStateException(

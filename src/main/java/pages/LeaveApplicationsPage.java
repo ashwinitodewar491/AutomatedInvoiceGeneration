@@ -1,7 +1,9 @@
 package pages;
 
 import com.microsoft.playwright.*;
+import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.SelectOption;
 import locators.LeaveApplicationsLocators;
 import models.LeaveRow;
 import models.PendingLeaveRow;
@@ -69,8 +71,8 @@ public class LeaveApplicationsPage {
 
                 String employee = cells.get(1).innerText().trim();
                 String daysText = cells.get(4).innerText().trim();
-                String status   = cells.get(7).innerText().trim();
-                String type     = cells.get(8).innerText().trim();
+                String status = cells.get(7).innerText().trim();
+                String type = cells.get(8).innerText().trim();
 
                 if (type.equalsIgnoreCase("WFH")) continue;
                 if (status.equalsIgnoreCase("Rejected")) continue;
@@ -82,7 +84,8 @@ public class LeaveApplicationsPage {
                                     Double.parseDouble(daysText)
                             )
                     );
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
 
             if (!loc.leaveHistoryNext.isEnabled()) break;
@@ -138,7 +141,8 @@ public class LeaveApplicationsPage {
                                     cells.get(5).innerText().trim()
                             )
                     );
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
 
             if (!loc.pendingNext.isEnabled()) break;
@@ -149,6 +153,7 @@ public class LeaveApplicationsPage {
         }
         return result;
     }
+
     public boolean isProjectIdPresent(String projectId) {
 
         Locator options = page.locator("#project_id option");
@@ -162,4 +167,69 @@ public class LeaveApplicationsPage {
         return false;
     }
 
+    public boolean isProjectNamePresent(String projectName) {
+
+        Locator options = page.locator("#project_id option");
+
+        return options.allInnerTexts()
+                .stream()
+                .anyMatch(
+                        text -> text.trim()
+                                .equalsIgnoreCase(projectName)
+                );
+    }
+
+    public String applyFiltersByProjectName(
+            String projectName,
+            String fromDate,
+            String toDate
+    ) {
+
+        Locator projectDropdown = page.locator("#project_id");
+
+        // 1️⃣ Trim input (important for spaces)
+        projectName = projectName.trim();
+
+        // 2️⃣ Validate project exists by visible text
+        Locator matchingOption = projectDropdown.locator("option")
+                .filter(new Locator.FilterOptions().setHasText(projectName));
+
+        if (matchingOption.count() == 0) {
+            throw new IllegalStateException(
+                    "Project not found in dropdown: " + projectName
+            );
+        }
+
+        // 3️⃣ Select by VISIBLE TEXT (label)
+        projectDropdown.selectOption(
+                new SelectOption().setLabel(projectName)
+        );
+
+        // 4️⃣ Read back selected project (safety check)
+        String selectedProject =
+                projectDropdown.locator("option:checked")
+                        .innerText()
+                        .trim();
+
+        System.out.println("✅ Selected project: " + selectedProject);
+
+        // 5️⃣ Apply date filters
+        page.getByRole(
+                AriaRole.TEXTBOX,
+                new Page.GetByRoleOptions().setName("From Date")
+        ).fill(fromDate);
+
+        page.getByRole(
+                AriaRole.TEXTBOX,
+                new Page.GetByRoleOptions().setName("To Date")
+        ).fill(toDate);
+
+        // 6️⃣ Search
+        page.getByRole(
+                AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Search")
+        ).click();
+
+        return selectedProject;
+    }
 }
