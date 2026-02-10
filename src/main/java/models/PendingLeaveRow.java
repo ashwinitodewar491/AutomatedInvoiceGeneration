@@ -1,4 +1,4 @@
-package pages;
+package models;
 
 
 import java.util.HashMap;
