@@ -26,7 +26,7 @@ public class LeaveReportTest {
         String[] projectNamesInput =
                 System.getProperty(
                         "PROJECT_NAMES",
-                        "Banyan-ops"
+                        "WKG"
                 ).split(",");
 
         List<File> attachments = new ArrayList<>();
@@ -35,7 +35,7 @@ public class LeaveReportTest {
         try (Playwright playwright = Playwright.create()) {
 
             Browser browser = playwright.chromium()
-                    .launch(new BrowserType.LaunchOptions().setHeadless(false));
+                    .launch(new BrowserType.LaunchOptions().setHeadless(true));
 
             Page page = browser.newPage();
 
