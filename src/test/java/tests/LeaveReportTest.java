@@ -81,7 +81,7 @@ public class LeaveReportTest {
 //                        range[0],
 //                        range[1]
 //                );
-                String projectName2=leavePage.applyFiltersByProjectName(projectName, "2024-01-13", "2024-07-13"); //Will keep this for testing purpose
+                String projectName2=leavePage.applyFiltersByProjectName(projectName, "2024-03-01", "2024-03-31"); //Will keep this for testing purpose
 
                 leavePage.openLeaveHistory();
 
