@@ -18,15 +18,15 @@ public class LeaveReportExcelWriter {
             List<PendingLeaveRow> pendingLeaves
     ) {
 
-       File excelFile = new File("Leave_Summary_Report : "+projectName+".xlsx");
-//        String workspace = System.getenv("WORKSPACE");
-//        if (workspace == null) {
-//            workspace = System.getProperty("user.dir"); // local run
-//        }
-//
-//        File excelFile = new File(
-//                workspace + File.separator + "Leave_Summary_Report_" + projectName + ".xlsx"
-//        );
+       //File excelFile = new File("Leave_Summary_Report : "+projectName+".xlsx");
+        String workspace = System.getenv("WORKSPACE");
+        if (workspace == null) {
+            workspace = System.getProperty("user.dir"); // local run
+        }
+
+        File excelFile = new File(
+                workspace + File.separator + "Leave_Summary_Report_" + projectName + ".xlsx"
+        );
 
         try (Workbook workbook = new XSSFWorkbook()) {
 
@@ -34,16 +34,25 @@ public class LeaveReportExcelWriter {
             Sheet historySheet = workbook.createSheet("Approved Leave History for "+projectName);
 
             Row header = historySheet.createRow(0);
-            header.createCell(0).setCellValue("Employee");
-            header.createCell(1).setCellValue("Transactions");
-            header.createCell(2).setCellValue("Total Leave Days");
-
+            header.createCell(0).setCellValue("Project Name");
+            header.createCell(1).setCellValue("Employee ID");
+            header.createCell(2).setCellValue("Employee Name");
+            header.createCell(3).setCellValue("Transactions");
+            header.createCell(4).setCellValue("Total Leave Days");
             int rowNum = 1;
             for (Map.Entry<String, double[]> entry : leaveHistorySummary.entrySet()) {
+
                 Row row = historySheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(entry.getKey());
-                row.createCell(1).setCellValue((int) entry.getValue()[0]);
-                row.createCell(2).setCellValue(entry.getValue()[1]);
+
+                String[] parts = entry.getKey().split("\\|\\|");
+                String employeeId = parts[0];
+                String employeeName = parts[1];
+
+                row.createCell(0).setCellValue(projectName);
+                row.createCell(1).setCellValue(employeeId);
+                row.createCell(2).setCellValue(employeeName);
+                row.createCell(3).setCellValue((int) entry.getValue()[0]);
+                row.createCell(4).setCellValue(entry.getValue()[1]);
             }
 
             // ================= SHEET 2 : Pending Leaves =================

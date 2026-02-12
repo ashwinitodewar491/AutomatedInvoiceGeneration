@@ -68,7 +68,7 @@ public class LeaveApplicationsPage {
                 Locator row = loc.leaveHistoryRows.nth(i);
                 List<Locator> cells = row.locator("td").all();
                 if (cells.size() < 9) continue;
-
+                String employeeId=cells.get(0).innerText().trim();
                 String employee = cells.get(1).innerText().trim();
                 String daysText = cells.get(4).innerText().trim();
                 String status = cells.get(7).innerText().trim();
@@ -80,6 +80,7 @@ public class LeaveApplicationsPage {
                 try {
                     result.add(
                             new LeaveRow(
+                                    employeeId,
                                     employee,
                                     Double.parseDouble(daysText)
                             )

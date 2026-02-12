@@ -26,7 +26,7 @@ public class LeaveReportTest {
         String[] projectNamesInput =
                 System.getProperty(
                         "PROJECT_NAMES",
-                        "WKG"
+                        "EXP2# FYNDNA POD,Banyan-ops"
                 ).split(",");
 
         List<File> attachments = new ArrayList<>();

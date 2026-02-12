@@ -24,9 +24,11 @@ public class LeaveReportService {
         Map<String, double[]> summary = new HashMap<>();
 
         for (LeaveRow row : rows) {
-            summary.putIfAbsent(row.employee, new double[]{0, 0});
-            summary.get(row.employee)[0]++;       // transactions
-            summary.get(row.employee)[1] += row.days;
+            String key = row.employeeId + "||" + row.employee;
+
+            summary.putIfAbsent(key, new double[]{0, 0});
+            summary.get(key)[0]++;
+            summary.get(key)[1] += row.days;
         }
         return summary;
     }
