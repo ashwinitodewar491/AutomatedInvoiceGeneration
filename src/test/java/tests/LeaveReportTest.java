@@ -7,10 +7,8 @@ import pages.LoginPage2;
 import models.PendingLeaveRow;
 import services.LeaveReportService;
 import utils.DateUtil;
-import utils.EmailUtil;
 import utils.EnvConfig;
 import utils.LeaveReportExcelWriter;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,9 +18,6 @@ public class LeaveReportTest {
 
     @Test
     public void generateLeaveReport() {
-
-//        String[] projectIds =
-//                System.getProperty("PROJECT_ID", "445,284").split(",");
         String[] projectNamesInput =
                 System.getProperty(
                         "PROJECT_NAMES",
@@ -36,6 +31,10 @@ public class LeaveReportTest {
 
             Browser browser = playwright.chromium()
                     .launch(new BrowserType.LaunchOptions().setHeadless(true));
+//            BrowserContext context = browser.newContext(
+//                    new Browser.NewContextOptions()
+//                            .setIgnoreHTTPSErrors(true)
+//            );
 
             Page page = browser.newPage();
 
@@ -113,14 +112,6 @@ public class LeaveReportTest {
                 );
             }
 
-            EmailUtil.sendEmailWithMultipleAttachments(
-                    attachments,
-                    EnvConfig.get("LOGIN_EMAIL_RECIPIENT"),
-                    "Monthly Leave Report",
-                    "Hello Team,\n\nPlease find attached reports for:\n\n"
-                            + projectNames +
-                            "\nRegards,\nAutomation"
-            );
         }
     }
 }
