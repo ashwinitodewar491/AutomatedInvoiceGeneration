@@ -37,7 +37,11 @@ public class LeaveReportTest {
             Browser browser = playwright.chromium()
                     .launch(new BrowserType.LaunchOptions().setHeadless(true));
 
-            Page page = browser.newPage();
+                        BrowserContext context = browser.newContext(
+                    new Browser.NewContextOptions()
+                            .setIgnoreHTTPSErrors(true)
+            );
+            Page page = context.newPage();
 
             new LoginPage2(page).login(
                     EnvConfig.get("LOGIN_EMAIL"),
