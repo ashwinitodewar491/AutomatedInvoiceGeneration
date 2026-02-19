@@ -3,244 +3,234 @@ package pages;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.LoadState;
+import com.microsoft.playwright.options.SelectOption;
+import locators.LeaveApplicationsLocators;
+import models.LeaveRow;
+import models.PendingLeaveRow;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class LeaveApplicationsPage {
 
     private final Page page;
+    private final LeaveApplicationsLocators loc;
 
     public LeaveApplicationsPage(Page page) {
         this.page = page;
+        this.loc = new LeaveApplicationsLocators(page);
     }
 
-    public void open() {
-        page.getByRole(
-                AriaRole.LINK,
-                new Page.GetByRoleOptions().setName(" Leave Applications")
-        ).click();
+    // ================= ACTIONS ONLY =================
 
+    public void open() {
+        loc.leaveApplicationsLink.click();
         page.waitForURL("**/leave_applications");
     }
 
     public String applyFilters(String projectId, String from, String to) {
-        //page.locator("#project_id").selectOption(projectId);
-        Locator projectDropdown = page.locator("#project_id");
 
-        // Get visible project name BEFORE selecting
-        String projectName = projectDropdown
+        String projectName = loc.projectDropdown
                 .locator("option[value='" + projectId + "']")
                 .innerText()
                 .trim();
 
-        projectDropdown.selectOption(projectId);
-        page.getByRole(
-                AriaRole.TEXTBOX,
-                new Page.GetByRoleOptions().setName("From Date")
-        ).fill(from);
+        loc.projectDropdown.selectOption(projectId);
+        loc.fromDateInput.fill(from);
+        loc.toDateInput.fill(to);
+        loc.searchButton.click();
 
-        page.getByRole(
-                AriaRole.TEXTBOX,
-                new Page.GetByRoleOptions().setName("To Date")
-        ).fill(to);
-
-        page.getByRole(
-                AriaRole.BUTTON,
-                new Page.GetByRoleOptions().setName("Search")
-        ).click();
         return projectName;
     }
 
     public void openLeaveHistory() {
-        page.getByRole(
-                AriaRole.BUTTON,
-                new Page.GetByRoleOptions().setName("Leave History")
-        ).click();
-        //page.waitForSelector("table tbody tr");
-        page.waitForFunction("""
-        () => {
-            const table = document.querySelector('table tbody');
-            if (!table) return false;
-
-            // Either rows exist OR empty message is shown
-            return table.querySelectorAll('tr').length >= 0;
-        }
-    """);
+        loc.leaveHistoryTab.click();
+        page.waitForFunction(
+                "() => document.querySelector('table tbody') !== null"
+        );
     }
 
-    private boolean waitForTableRedraw(String previousFirstRowText) {
-        try {
-            page.waitForFunction(
-                    "(prevText) => {" +
-                            "const rows = document.querySelectorAll('table tbody tr');" +
-                            "if (!rows || rows.length === 0) return false;" +
-                            "return rows[0].innerText.trim() !== prevText.trim();" +
-                            "}",
-                    previousFirstRowText,
-                    new Page.WaitForFunctionOptions().setTimeout(5000)
-            );
-            return true; // table changed
-        } catch (PlaywrightException e) {
-            System.out.println("No table change detected");
-            return false;
-        }
-    }
+    public List<LeaveRow> fetchLeaveHistoryRows() {
 
-    public Map<String, double[]> calculateLeaveDaysPerEmployee() {
+        List<LeaveRow> result = new ArrayList<>();
 
-        List<LeaveRow> tempRows = new ArrayList<>();
-        boolean hasNextPage = true;
+        while (true) {
 
-        while (hasNextPage) {
-
-            // 1️⃣ Wait only for table body (not rows)
-            page.waitForFunction("""
-            () => document.querySelector('table tbody') !== null
-        """);
-
-            Locator rowsLocator = page.locator("table tbody tr");
-            int rowCount = rowsLocator.count();
-
-            // 2️⃣ ZERO-ROW GUARD (EXIT EARLY)
-            if (rowCount == 0) {
-                System.out.println("⚠️ No leave history rows found. Skipping row processing.");
-                break;
-            }
-
-            // 3️⃣ SAFE snapshot (only when rows exist)
-            String firstRowSnapshot = rowsLocator.first().innerText();
-
-            // 4️⃣ Read rows ONLY when rowCount > 0
-            for (int i = 0; i < rowCount; i++) {
-
-                Locator row = rowsLocator.nth(i);
-                List<Locator> cells = row.locator("td").all();
-                if (cells.size() < 9) continue;
-
-                String employee     = cells.get(1).innerText().trim();
-                String leaveType    = cells.get(8).innerText().trim();
-                String daysText     = cells.get(4).innerText().trim();
-                String leaveStatus  = cells.get(7).innerText().trim();
-
-                if (leaveType.equalsIgnoreCase("WFH")) continue;
-                if (leaveStatus.equalsIgnoreCase("Rejected")) continue;
-
-                try {
-                    double days = Double.parseDouble(daysText);
-                    tempRows.add(new LeaveRow(employee, days));
-                } catch (Exception ignored) {}
-            }
-
-            // 5️⃣ Pagination logic
-            Locator nextButton = page.getByRole(
-                    AriaRole.LINK,
-                    new Page.GetByRoleOptions().setName("Next")
-            );
-
-            if (nextButton.count() == 0 || !nextButton.isEnabled()) {
-                hasNextPage = false;
-                break;
-            }
-
-            nextButton.scrollIntoViewIfNeeded();
-            page.waitForTimeout(500);
-            nextButton.click();
-
-            boolean changed = waitForTableRedraw(firstRowSnapshot);
-            if (!changed) break;
-        }
-
-        // 6️⃣ Consolidation
-        Map<String, double[]> result = new HashMap<>();
-        for (LeaveRow row : tempRows) {
-            result.putIfAbsent(row.employee, new double[]{0, 0});
-            result.get(row.employee)[0]++;
-            result.get(row.employee)[1] += row.days;
-        }
-
-        return result;
-    }
-
-
-    public List<PendingLeaveRow> fetchPendingLeaves() {
-
-        page.waitForLoadState(LoadState.NETWORKIDLE);
-
-        List<PendingLeaveRow> result = new ArrayList<>();
-        boolean hasNextPage = true;
-        int pageNo = 1;
-
-        while (hasNextPage) {
-
-            Locator rowsLocator = page.locator("#pending_leave table tbody tr");
-
-            int rowCount = rowsLocator.count();
-
-            //System.out.println("-----------------------------------------------------------");
-            //System.out.println("Pending Leaves - Page " + pageNo + " | Rows: " + rowCount);
-
-            for (int i = 0; i < rowCount; i++) {
-
-                Locator row = rowsLocator.nth(i);
-                List<Locator> cells = row.locator("td").all();
-
-                // must have Leave Approver column
-                if (cells.size() < 7) continue;
-
-                String approver = cells.get(6).innerText().trim();
-                if (approver.isEmpty() || approver.equals("-")) continue;
-
-                String employee  = cells.get(1).innerText().trim();
-                String startDate = cells.get(2).innerText().trim();
-                String endDate   = cells.get(3).innerText().trim();
-                String daysText  = cells.get(4).innerText().trim();
-                String type      = cells.get(8).innerText().trim();
-                String reason    = cells.get(5).innerText().trim();
-
-                try {
-                    double days = Double.parseDouble(daysText);
-                    result.add(new PendingLeaveRow(
-                            employee, startDate, endDate, days, type, reason
-                    ));
-                } catch (Exception ignored) {}
-            }
-
-            // ---------------- NEXT BUTTON LOGIC ----------------
-            Locator nextButton = page.getByRole(
-                    AriaRole.LINK,
-                    new Page.GetByRoleOptions().setName("Next")
-            );
-
-            if (nextButton.count() == 0 || !nextButton.isEnabled()) {
-                hasNextPage = false;
-                //System.out.println("No more pending pages.");
-                break;
-            }
-
-            // Scroll first (important)
-            nextButton.scrollIntoViewIfNeeded();
-
-            // Small stabilization wait
-            page.waitForTimeout(500);
-
-            nextButton.click();
-            System.out.println("Clicked Next page");
-
-            // Wait for new page data to load
             page.waitForLoadState(LoadState.NETWORKIDLE);
 
-            pageNo++;
-        }
+            int count = loc.leaveHistoryRows.count();
+            if (count == 0) break;
 
+            String snapshot = loc.leaveHistoryRows.first().innerText();
+
+            for (int i = 0; i < count; i++) {
+
+                Locator row = loc.leaveHistoryRows.nth(i);
+                List<Locator> cells = row.locator("td").all();
+                if (cells.size() < 9) continue;
+                String employeeId=cells.get(0).innerText().trim();
+                String employee = cells.get(1).innerText().trim();
+                String daysText = cells.get(4).innerText().trim();
+                String status = cells.get(7).innerText().trim();
+                String type = cells.get(8).innerText().trim();
+
+                if (type.equalsIgnoreCase("WFH")) continue;
+                if (status.equalsIgnoreCase("Rejected")) continue;
+
+                try {
+                    result.add(
+                            new LeaveRow(
+                                    employeeId,
+                                    employee,
+                                    Double.parseDouble(daysText)
+                            )
+                    );
+                } catch (Exception ignored) {
+                }
+            }
+
+            if (!loc.leaveHistoryNext.isEnabled()) break;
+
+            loc.leaveHistoryNext.scrollIntoViewIfNeeded();
+            loc.leaveHistoryNext.click();
+
+            try {
+                page.waitForFunction(
+                        "(text) => document.querySelector('table tbody tr')?.innerText !== text",
+                        snapshot
+                );
+            } catch (Exception e) {
+                break;
+            }
+        }
         return result;
     }
 
     public void openPendingLeaves() {
-        page.locator("#pending_link").click();
+        loc.pendingTab.click();
         page.waitForLoadState(LoadState.NETWORKIDLE);
     }
 
+    public List<PendingLeaveRow> fetchPendingLeaves() {
+
+        List<PendingLeaveRow> result = new ArrayList<>();
+
+        while (true) {
+
+            int count = loc.pendingRows.count();
+            if (count == 0) break;
+
+            for (int i = 0; i < count; i++) {
+
+                Locator row = loc.pendingRows.nth(i);
+                List<Locator> cells = row.locator("td").all();
+                if (cells.size() < 9) continue;
+
+                String approver = cells.get(6).innerText().trim();
+                if (approver.isEmpty() || approver.equals("-")) continue;
+
+                try {
+                    result.add(
+                            new PendingLeaveRow(
+                                    cells.get(1).innerText().trim(),
+                                    cells.get(2).innerText().trim(),
+                                    cells.get(3).innerText().trim(),
+                                    Double.parseDouble(
+                                            cells.get(4).innerText().trim()
+                                    ),
+                                    cells.get(8).innerText().trim(),
+                                    cells.get(5).innerText().trim()
+                            )
+                    );
+                } catch (Exception ignored) {
+                }
+            }
+
+            if (!loc.pendingNext.isEnabled()) break;
+
+            loc.pendingNext.scrollIntoViewIfNeeded();
+            loc.pendingNext.click();
+            page.waitForLoadState(LoadState.NETWORKIDLE);
+        }
+        return result;
+    }
+
+    public boolean isProjectIdPresent(String projectId) {
+
+        Locator options = page.locator("#project_id option");
+
+        for (int i = 0; i < options.count(); i++) {
+            String value = options.nth(i).getAttribute("value");
+            if (projectId.equals(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isProjectNamePresent(String projectName) {
+
+        Locator options = page.locator("#project_id option");
+
+        return options.allInnerTexts()
+                .stream()
+                .anyMatch(
+                        text -> text.trim()
+                                .equalsIgnoreCase(projectName)
+                );
+    }
+
+    public String applyFiltersByProjectName(
+            String projectName,
+            String fromDate,
+            String toDate
+    ) {
+
+        Locator projectDropdown = page.locator("#project_id");
+
+        // 1️⃣ Trim input (important for spaces)
+        projectName = projectName.trim();
+
+        // 2️⃣ Validate project exists by visible text
+        Locator matchingOption = projectDropdown.locator("option")
+                .filter(new Locator.FilterOptions().setHasText(projectName));
+
+        if (matchingOption.count() == 0) {
+            throw new IllegalStateException(
+                    "Project not found in dropdown: " + projectName
+            );
+        }
+
+        // 3️⃣ Select by VISIBLE TEXT (label)
+        projectDropdown.selectOption(
+                new SelectOption().setLabel(projectName)
+        );
+
+        // 4️⃣ Read back selected project (safety check)
+        String selectedProject =
+                projectDropdown.locator("option:checked")
+                        .innerText()
+                        .trim();
+
+        System.out.println("✅ Selected project: " + selectedProject);
+
+        // 5️⃣ Apply date filters
+        page.getByRole(
+                AriaRole.TEXTBOX,
+                new Page.GetByRoleOptions().setName("From Date")
+        ).fill(fromDate);
+
+        page.getByRole(
+                AriaRole.TEXTBOX,
+                new Page.GetByRoleOptions().setName("To Date")
+        ).fill(toDate);
+
+        // 6️⃣ Search
+        page.getByRole(
+                AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Search")
+        ).click();
+
+        return selectedProject;
+    }
 }
