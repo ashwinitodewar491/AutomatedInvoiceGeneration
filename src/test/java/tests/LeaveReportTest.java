@@ -7,7 +7,6 @@ import pages.LoginPage2;
 import models.PendingLeaveRow;
 import services.LeaveReportService;
 import utils.DateUtil;
-import utils.EmailUtil;
 import utils.EnvConfig;
 import utils.LeaveReportExcelWriter;
 
@@ -20,9 +19,6 @@ public class LeaveReportTest {
 
     @Test
     public void generateLeaveReport() {
-
-//        String[] projectIds =
-//                System.getProperty("PROJECT_ID", "445,284").split(",");
         String[] projectNamesInput =
                 System.getProperty(
                         "PROJECT_NAMES",
@@ -117,14 +113,6 @@ public class LeaveReportTest {
                 );
             }
 
-            EmailUtil.sendEmailWithMultipleAttachments(
-                    attachments,
-                    EnvConfig.get("LOGIN_EMAIL_RECIPIENT"),
-                    "Monthly Leave Report",
-                    "Hello Team,\n\nPlease find attached reports for:\n\n"
-                            + projectNames +
-                            "\nRegards,\nAutomation"
-            );
         }
     }
 }
