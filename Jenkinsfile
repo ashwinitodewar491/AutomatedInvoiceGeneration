@@ -32,14 +32,14 @@ pipeline {
 
         stage('Build & Execute Tests') {
             steps {
-                sh """
-                    mvn clean test \
-                    -DPROJECT_NAMES=${params.PROJECT_NAMES} \
-                    -DBASE_URL=${params.BASE_URL} \
-                    -DLOGIN_EMAIL=${params.LOGIN_EMAIL} \
-                    -DLOGIN_PASSWORD=${params.LOGIN_PASSWORD} \
-                    -DRUN_TYPE=${params.RUN_TYPE}
-                """
+            sh '''
+            mvn clean test \
+              "-DPROJECT_NAMES=$PROJECT_NAMES" \
+              "-DBASE_URL=$BASE_URL" \
+              "-DLOGIN_EMAIL=$LOGIN_EMAIL" \
+              "-DLOGIN_PASSWORD=$LOGIN_PASSWORD" \
+              "-DRUN_TYPE=$RUN_TYPE"
+            '''
             }
         }
     }
