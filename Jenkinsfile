@@ -25,7 +25,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'jenkinsChanges',
+                git branch: 'main',
                     url: 'https://github.com/ashwinitodewar491/AutomatedInvoiceGeneration.git'
             }
         }
