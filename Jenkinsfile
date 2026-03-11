@@ -3,7 +3,6 @@ pipeline {
             label 'Intranet-staging'
         }
 
-
     options {
         buildDiscarder(logRotator(
             daysToKeepStr: '1',
