@@ -9,7 +9,6 @@ import services.LeaveReportService;
 import utils.DateUtil;
 import utils.EnvConfig;
 import utils.LeaveReportExcelWriter;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +31,10 @@ public class LeaveReportTest {
 
             Browser browser = playwright.chromium()
                     .launch(new BrowserType.LaunchOptions().setHeadless(true));
+//            BrowserContext context = browser.newContext(
+//                    new Browser.NewContextOptions()
+//                            .setIgnoreHTTPSErrors(true)
+//            );
 
                         BrowserContext context = browser.newContext(
                     new Browser.NewContextOptions()
